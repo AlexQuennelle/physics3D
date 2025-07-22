@@ -1,0 +1,37 @@
+---
+Checks: "-*,
+        modernize-*,
+        -modernize-use-trailing-return-type,
+        -modernize-return-braced-init-list,
+
+        readability-*,
+        -readability-make-member-function-const,
+        -readability-magic-numbers,
+        -readability-braces-around-statements,
+        -readability-uppercase-literal-suffix,
+        -readability-else-after-return,
+        -readability-static-accessed-through-instance,
+        -readability-avoid-const-params-in-decls,
+
+        portability-*,
+
+        performance-*,
+        -performance-no-int-to-ptr,
+
+        -cppcoreguidelines-non-private-member-variables-in-classes,
+
+        misc-*,
+        -misc-use-internal-linkage,
+        -misc-non-private-member-variables-in-classes,
+"
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+FormatStyle:     file
+
+CheckOptions:
+  - key: readability-identifier-length.IgnoredVariableNames
+    value: 'x|y|z'
+  - key: readability-identifier-length.IgnoredParameterNames
+    value: 'x|y|z'
+  - key: readability-identifier-length.MinimumLoopCounterNameLength
+    value: '1'
