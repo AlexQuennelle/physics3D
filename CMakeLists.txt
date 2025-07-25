@@ -42,18 +42,18 @@ include(FetchContent)
 
 file(
     GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/Src/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
 
 add_executable("${CMAKE_PROJECT_NAME}") 
 if(EMSCRIPTEN)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}\
- --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/Src/template.html"
+ --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/src/template.html"
     )
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
     set_target_properties(
         ${CMAKE_PROJECT_NAME} PROPERTIES LINK_FLAGS
-        "--preload-file ../Resources@./Resources"
+        "--preload-file ../resources@./Resources"
     )
 endif()
 target_compile_definitions(
@@ -82,13 +82,13 @@ endif()
 
 
 set(RELEASE_RESOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bin/\
-${CMAKE_PROJECT_NAME}_${CMAKE_PROJECT_VERSION}/Resources/"
+${CMAKE_PROJECT_NAME}_${CMAKE_PROJECT_VERSION}/resources/"
 )
-set(DEBUG_RESOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Resources/")
+set(DEBUG_RESOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resources/")
 target_compile_definitions(
     ${CMAKE_PROJECT_NAME}
     PUBLIC
-    RESOURCES_PATH=$<IF:$<CONFIG:Release>,"./Resources/","${DEBUG_RESOURCE_DIR}">
+    RESOURCES_PATH=$<IF:$<CONFIG:Release>,"./resources/","${DEBUG_RESOURCE_DIR}">
 )
 
 target_compile_features("${CMAKE_PROJECT_NAME}" PRIVATE cxx_std_20)
@@ -98,7 +98,7 @@ target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${MY_SOURCES} )
 target_link_libraries(${PROJECT_NAME} raylib)
 
 target_include_directories(
-    "${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Include/"
+    "${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/"
 )
 target_include_directories(
     "${CMAKE_PROJECT_NAME}" PUBLIC "${PROJECT_BINARY_DIR}"
@@ -109,7 +109,7 @@ if(NOT EMSCRIPTEN)
         TARGET ${CMAKE_PROJECT_NAME}
         POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/Resources"
+        "${CMAKE_CURRENT_SOURCE_DIR}/resources/"
         $<IF:$<CONFIG:Release>,"${RELEASE_RESOURCE_DIR}","${DEBUG_RESOURCE_DIR}">
     )
 endif()
