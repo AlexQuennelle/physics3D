@@ -1,4 +1,7 @@
-#include "raylib.h"
+#include "collider.h"
+
+#include <raylib.h>
+#include <raymath.h>
 
 void Update();
 
@@ -11,6 +14,7 @@ int main()
 #else
 	InitWindow(800, 800, NAME);
 	SetTargetFPS(60);
+	phys::CreateBoxCollider(MatrixIdentity());
 	while (!WindowShouldClose())
 	{
 		Update();
