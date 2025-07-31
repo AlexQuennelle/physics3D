@@ -7,7 +7,6 @@
 #include <raymath.h>
 #include <vector>
 #ifndef NDEBUG
-#include "utils.h"
 #include <ostream>
 #endif // !NDEBUG
 
@@ -24,6 +23,13 @@ std::optional<HitObj> CheckCollision(const Collider& col1, const Matrix trans1,
 {
 	vector<Collider> cols1 = col1.GetTransformed(trans1);
 	vector<Collider> cols2 = col2.GetTransformed(trans2);
+	for (auto collider1 : cols1)
+	{
+		for (auto collider2 : cols2)
+		{
+			// TODO: Implement SAT check
+		}
+	}
 	return {};
 }
 
@@ -34,16 +40,6 @@ MeshCollider::MeshCollider(const vector<Vector3>& verts,
 	std::memcpy(this->vertices.data(), &verts, verts.size());
 	this->normals.reserve(nors.size());
 	std::memcpy(this->normals.data(), &nors, nors.size());
-}
-//MeshCollider::MeshCollider(const MeshCollider& other)
-//{
-//	this->vertices = other.vertices;
-//}
-
-vector<Collider> MeshCollider::GetTransformed(const Matrix trans) const
-{
-	vector<Collider> cols{MeshCollider(*this) * trans};
-	return cols;
 }
 MeshCollider MeshCollider::operator*(const Matrix mat)
 {
@@ -58,6 +54,12 @@ MeshCollider MeshCollider::operator*(const Matrix mat)
 		nor = Vector3Transform(nor, mat);
 	}
 	return {newVerts, newNors};
+}
+
+vector<Collider> MeshCollider::GetTransformed(const Matrix trans) const
+{
+	vector<Collider> cols{MeshCollider(*this) * trans};
+	return cols;
 }
 vector<Collider> CompoundCollider::GetTransformed(const Matrix trans) const
 {

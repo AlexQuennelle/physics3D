@@ -20,15 +20,17 @@ struct HitObj;
 /** Abstract Collider class */
 class Collider
 {
+	// TODO: Add mass property
 	public:
 	virtual ~Collider() = default;
-	/** Applies a transformation matrix to a Collider and returns it in a
+	/**
+	 * Applies a transformation matrix to a Collider and returns it in a
 	 * vector.
 	 * @returns A vector of Colliders transformed by the supplied matrix. The
 	 * Vector may contain multiple Colliders.
 	 */
 	[[nodiscard]] virtual std::vector<Collider>
-	GetTransformed(const Matrix  /*trans*/) const
+	GetTransformed(const Matrix /*trans*/) const
 	{
 		return {};
 	}
@@ -36,7 +38,8 @@ class Collider
 	private:
 };
 
-/** Special type of collider that collects several more simple colliders
+/**
+ * Special type of collider that collects several more simple colliders
  * together to create complex concave shapes
  */
 class CompoundCollider : public Collider
@@ -44,6 +47,7 @@ class CompoundCollider : public Collider
 	public:
 	CompoundCollider();
 
+	/** @copydoc Collider::GetTransformed() */
 	[[nodiscard]] vector<Collider>
 	GetTransformed(const Matrix trans) const override;
 
@@ -57,11 +61,11 @@ class MeshCollider : public Collider
 	public:
 	MeshCollider(const vector<Vector3>& verts, const vector<Vector3>& nors);
 
-	/** @copydoc Collider::GetTransformed()
-	 */
+	/** @copydoc Collider::GetTransformed() */
 	[[nodiscard]] vector<Collider>
 	GetTransformed(const Matrix trans) const override;
 
+	/** Apply a transformation matrix to the Collider. */
 	MeshCollider operator*(const Matrix mat);
 
 	private:
@@ -69,6 +73,8 @@ class MeshCollider : public Collider
 	vector<Vector3> normals;
 };
 
+// TODO: Implement or remove.
+// This Collider type may be more effort than it's worth.
 class SphereCollider : public Collider
 {
 	public:
@@ -86,7 +92,8 @@ struct HitObj
 	Vector3 HitPos{0.0f, 0.0f, 0.0f};
 };
 
-/** Checks if 2 colliders are overlapping
+/**
+ * Checks if 2 colliders are overlapping
  *
  * @params col1 The first collider to check
  * @params trans1 The transform of the object associated with col1
@@ -99,7 +106,8 @@ struct HitObj
 std::optional<HitObj> CheckCollision(const Collider& col1, const Matrix trans1,
 									 const Collider& col2, const Matrix trans2);
 
-/** Creates a rectangular mesh collider with one corner at (0, 0, 0).
+/**
+ * Creates a rectangular mesh collider with one corner at (0, 0, 0).
  * @param transform A transformation matrix.
  */
 MeshCollider CreateBoxCollider(Matrix transform);
