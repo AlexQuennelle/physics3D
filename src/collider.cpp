@@ -1,15 +1,13 @@
 #include "collider.h"
-#include "utils.h"
 
-#include <cstring>
 #include <iostream>
 #include <limits>
 #include <optional>
 #include <raylib.h>
 #include <raymath.h>
-#include <utility>
 #include <vector>
 #ifndef NDEBUG
+#include "utils.h"
 #include <ostream>
 #endif // !NDEBUG
 
@@ -24,29 +22,13 @@ using std::ostream;
 std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
 									 const Collider* col2, const Matrix trans2)
 {
-	std::cout << "AAAAAA\n";
 	vector<Collider*> cols1 = col1->GetTransformed(trans1);
-	std::cout << cols1.size() << '\n';
 	vector<Collider*> cols2 = col2->GetTransformed(trans2);
-	std::cout << cols2.size() << '\n';
 	for (const auto& collider1 : cols1)
 	{
-		for (auto vert : reinterpret_cast<MeshCollider*>(collider1)->vertices)
-		{
-			std::cout << vert;
-		}
-		std::cout << "p";
 		for (const auto& collider2 : cols2)
 		{
-			std::cout << "a\n";
-			for (auto vert :
-				 reinterpret_cast<MeshCollider*>(collider1)->vertices)
-			{
-				std::cout << vert;
-			}
-			// TODO: Implement SAT check
 			vector<Vector3> nors = collider1->GetNormals();
-			std::cout << nors.size() << '\n';
 			vector<Vector3> nors2 = collider2->GetNormals();
 			nors.insert(nors.end(), nors2.begin(), nors2.end());
 			for (const auto nor : nors)
@@ -64,8 +46,7 @@ std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
 				{
 #ifndef NDEBUG
 					SetTextColor({0, 255, 0, 255});
-					std::cout << nor;
-					std::cout << "Hit!\n";
+					std::cout << nor << " Hit!\n";
 					ClearStyles();
 #endif // !NDEBUG
 				}
@@ -87,11 +68,6 @@ std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
 MeshCollider::MeshCollider(const vector<Vector3>& verts,
 						   const vector<Vector3>& nors)
 {
-	std::cout << nors.size() << "asdf\n";
-	//this->vertices.reserve(verts.size());
-	//std::memcpy(this->vertices.data(), &verts, verts.size());
-	//this->normals.reserve(nors.size());
-	//std::memcpy(this->normals.data(), &nors, nors.size());
 	this->vertices.insert(this->vertices.end(), verts.begin(), verts.end());
 	this->normals.insert(this->normals.end(), nors.begin(), nors.end());
 }
@@ -112,31 +88,22 @@ MeshCollider MeshCollider::operator*(const Matrix mat)
 
 vector<Collider*> MeshCollider::GetTransformed(const Matrix trans) const
 {
-	//Vector3 pos;
-	//Quaternion rot;
-	//Vector3 scale;
-	//MatrixDecompose(trans, &pos, &rot, &scale);
-	vector<Vector3> newVerts = this->vertices;
-	for (auto vert : newVerts)
+	vector<Vector3> newVerts;
+	newVerts.reserve(this->vertices.size());
+	for (auto vert : this->vertices)
 	{
-		std::cout << vert;
-		vert = Vector3Transform(vert, trans);
-		std::cout << vert << '\n';
+		newVerts.push_back(Vector3Transform(vert, trans));
 	}
-	vector<Vector3> newNors = this->normals;
-	for (auto nor : newNors)
+	vector<Vector3> newNors;
+	newNors.reserve(this->normals.size());
+	for (auto nor : this->normals)
 	{
-		nor = Vector3Transform(nor, trans);
+		newNors.push_back(Vector3Transform(nor, trans));
 	}
 	vector<Collider*> cols{new MeshCollider(newVerts, newNors)};
 	return cols;
 }
-vector<Vector3> MeshCollider::GetNormals() const
-{
-	std::cout << "Norm\n";
-	std::cout << this->normals.size() << '\n';
-	return {this->normals};
-}
+vector<Vector3> MeshCollider::GetNormals() const { return {this->normals}; }
 Range MeshCollider::GetProjection(const Vector3 nor) const
 {
 	Range proj{.min = std::numeric_limits<float>::max(),
