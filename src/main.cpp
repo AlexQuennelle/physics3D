@@ -15,8 +15,7 @@ int main()
 	InitWindow(800, 800, NAME);
 	SetTargetFPS(60);
 	phys::MeshCollider box = phys::CreateBoxCollider(MatrixIdentity());
-	auto mat =
-		MatrixMultiply(MatrixRotateX(0.0f), MatrixTranslate(0.0f, 1.2f, 0.0f));
+	auto mat = MatrixRotateX(0.0f) * MatrixTranslate(0.0f, 1.2f, 0.0f);
 	phys::CheckCollision(&box, MatrixIdentity(), &box, mat);
 	while (!WindowShouldClose())
 	{

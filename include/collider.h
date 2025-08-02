@@ -91,7 +91,7 @@ class MeshCollider : public Collider
 	[[nodiscard]] Range GetProjection(const Vector3 nor) const override;
 
 	/** Apply a transformation matrix to the Collider. */
-	MeshCollider operator*(const Matrix mat);
+	MeshCollider operator*(const Matrix& mat);
 
 	vector<Vector3> vertices;
 	vector<Vector3> normals;

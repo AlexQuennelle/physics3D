@@ -39,9 +39,8 @@ std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
 				std::cout << proj1 << '\n';
 				std::cout << proj2 << '\n';
 #endif // !NDEBUG
-
 				bool overlapped =
-					(proj1.min <= proj2.max && proj2.min <= proj1.max);
+					proj1.min <= proj2.max && proj2.min <= proj1.max;
 				if (overlapped)
 				{
 #ifndef NDEBUG
@@ -71,7 +70,7 @@ MeshCollider::MeshCollider(const vector<Vector3>& verts,
 	this->vertices.insert(this->vertices.end(), verts.begin(), verts.end());
 	this->normals.insert(this->normals.end(), nors.begin(), nors.end());
 }
-MeshCollider MeshCollider::operator*(const Matrix mat)
+MeshCollider MeshCollider::operator*(const Matrix& mat)
 {
 	vector<Vector3> newVerts = this->vertices;
 	for (auto vert : newVerts)
