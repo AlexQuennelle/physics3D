@@ -24,6 +24,7 @@ std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
 {
 	vector<Collider*> cols1 = col1->GetTransformed(trans1);
 	vector<Collider*> cols2 = col2->GetTransformed(trans2);
+	std::cout << cols1.size() << '\n';
 	for (const auto& collider1 : cols1)
 	{
 		for (const auto& collider2 : cols2)
@@ -87,6 +88,7 @@ MeshCollider MeshCollider::operator*(const Matrix& mat)
 
 vector<Collider*> MeshCollider::GetTransformed(const Matrix trans) const
 {
+	std::cout << "test";
 	vector<Vector3> newVerts;
 	newVerts.reserve(this->vertices.size());
 	for (auto vert : this->vertices)
@@ -100,6 +102,7 @@ vector<Collider*> MeshCollider::GetTransformed(const Matrix trans) const
 		newNors.push_back(Vector3Transform(nor, trans));
 	}
 	vector<Collider*> cols{new MeshCollider(newVerts, newNors)};
+	std::cout << cols.size() << '\n';
 	return cols;
 }
 vector<Vector3> MeshCollider::GetNormals() const { return {this->normals}; }
@@ -138,16 +141,19 @@ vector<Vector3> CompoundCollider::GetNormals() const
 	return nors;
 }
 
-MeshCollider CreateBoxCollider(Matrix transform)
+MeshCollider* CreateBoxCollider(Matrix transform)
 {
 	vector<Vector3> verts{
 		{.x = 0.0f, .y = 0.0f, .z = 0.0f}, {.x = 1.0f, .y = 0.0f, .z = 0.0f},
 		{.x = 0.0f, .y = 1.0f, .z = 0.0f}, {.x = 1.0f, .y = 0.0f, .z = 1.0f},
 		{.x = 0.0f, .y = 0.0f, .z = 1.0f}, {.x = 1.0f, .y = 1.0f, .z = 0.0f},
-		{.x = 0.0f, .y = 1.0f, .z = 1.0f}, {.x = 1.0f, .y = 1.0f, .z = 1.0f}};
-	vector<Vector3> nors{{.x = 1.0f, .y = 0.0f, .z = 0.0f},
-						 {.x = 0.0f, .y = 1.0f, .z = 0.0f},
-						 {.x = 0.0f, .y = 0.0f, .z = 1.0f}};
+		{.x = 0.0f, .y = 1.0f, .z = 1.0f}, {.x = 1.0f, .y = 1.0f, .z = 1.0f},
+	};
+	vector<Vector3> nors{
+		{.x = 1.0f, .y = 0.0f, .z = 0.0f},
+		{.x = 0.0f, .y = 1.0f, .z = 0.0f},
+		{.x = 0.0f, .y = 0.0f, .z = 1.0f},
+	};
 	for (auto vert : verts)
 	{
 		Vector3Transform(vert, transform);
@@ -156,7 +162,7 @@ MeshCollider CreateBoxCollider(Matrix transform)
 	{
 		Vector3Transform(nor, transform);
 	}
-	return *new MeshCollider(verts, nors);
+	return new MeshCollider(verts, nors);
 }
 
 #ifndef NDEBUG

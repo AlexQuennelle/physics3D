@@ -135,7 +135,7 @@ std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
  * Creates a rectangular mesh collider with one corner at (0, 0, 0).
  * @param transform A transformation matrix.
  */
-MeshCollider CreateBoxCollider(Matrix transform);
+MeshCollider* CreateBoxCollider(Matrix transform);
 
 #ifndef NDEBUG
 ostream& operator<<(ostream& ostr, HitObj hit);

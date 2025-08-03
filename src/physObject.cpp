@@ -1,6 +1,121 @@
 #include "physObject.h"
+#include "collider.h"
+
+#include <array>
+#include <cstdint>
+#include <cstring>
+#include <iostream>
+#include <raylib.h>
+#include <raymath.h>
 
 namespace phys
 {
 
+PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Collider* col)
+{
+	this->position = MatrixTranslate(pos.x, pos.y, pos.z);
+	this->rotation = MatrixRotate({0.0f, 1.0f, 0.0f}, 0.0f);
+	this->scale = MatrixScale(1.0f, 1.0f, 1.0f);
+	this->mesh = mesh;
+	UploadMesh(&this->mesh, false);
+	this->collider = col;
 }
+
+PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)
+{
+	MeshCollider* col = CreateBoxCollider(MatrixIdentity());
+	//auto mesh = GenMeshCube(dims.x, dims.y, dims.z);
+	//UnloadMesh(mesh);
+	//for (int i{0}; i < mesh.vertexCount; i++)
+	//{
+	//	mesh.vertices[(i * 3) + 0] += 0.5f;
+	//	mesh.vertices[(i * 3) + 1] += 0.5f;
+	//	mesh.vertices[(i * 3) + 2] += 0.5f;
+	//	std::cout << " (" << mesh.vertices[(i * 3) + 0];
+	//	std::cout << ", " << mesh.vertices[(i * 3) + 1];
+	//	std::cout << ", " << mesh.vertices[(i * 3) + 2];
+	//	std::cout << ")\n";
+	//}
+	//UploadMesh(&mesh, false);
+	Mesh mesh;
+	vector<Vector3> verts{
+		{.x = 0.0f, .y = 0.0f, .z = dims.z},
+		{.x = dims.x, .y = 0.0f, .z = dims.z},
+		{.x = dims.x, .y = dims.y, .z = dims.z},
+		{.x = 0.0f, .y = dims.y, .z = dims.z},
+		{.x = 0.0f, .y = 0.0f, .z = 0.0f},
+		{.x = 0.0f, .y = dims.y, .z = 0.0f},
+		{.x = dims.x, .y = dims.y, .z = 0.0f},
+		{.x = dims.x, .y = 0.0f, .z = 0.0f},
+		{.x = 0.0f, .y = dims.y, .z = 0.0f},
+		{.x = 0.0f, .y = dims.y, .z = dims.z},
+		{.x = dims.x, .y = dims.y, .z = dims.z},
+		{.x = dims.x, .y = dims.y, .z = 0.0f},
+		{.x = 0.0f, .y = 0.0f, .z = 0.0f},
+		{.x = dims.x, .y = 0.0f, .z = 0.0f},
+		{.x = dims.x, .y = 0.0f, .z = dims.z},
+		{.x = 0.0f, .y = 0.0f, .z = dims.z},
+		{.x = dims.x, .y = 0.0f, .z = 0.0f},
+		{.x = dims.x, .y = dims.y, .z = 0.0f},
+		{.x = dims.x, .y = dims.y, .z = dims.z},
+		{.x = dims.x, .y = 0.0f, .z = dims.z},
+		{.x = 0.0f, .y = 0.0f, .z = 0.0f},
+		{.x = 0.0f, .y = 0.0f, .z = dims.z},
+		{.x = 0.0f, .y = dims.y, .z = dims.z},
+		{.x = 0.0f, .y = dims.y, .z = 0.0f},
+	};
+	vector<float> UVs{
+		0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+		0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+		0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+	};
+	vector<Vector3> normals{
+		{.x = 0.0f, .y = 0.0f, .z = 1.0f},	{.x = 0.0f, .y = 0.0f, .z = 1.0f},
+		{.x = 0.0f, .y = 0.0f, .z = 1.0f},	{.x = 0.0f, .y = 0.0f, .z = 1.0f},
+		{.x = 0.0f, .y = 0.0f, .z = -1.0f}, {.x = 0.0f, .y = 0.0f, .z = -1.0f},
+		{.x = 0.0f, .y = 0.0f, .z = -1.0f}, {.x = 0.0f, .y = 0.0f, .z = -1.0f},
+		{.x = 0.0f, .y = 1.0f, .z = 0.0f},	{.x = 0.0f, .y = 1.0f, .z = 0.0f},
+		{.x = 0.0f, .y = 1.0f, .z = 0.0f},	{.x = 0.0f, .y = 1.0f, .z = 0.0f},
+		{.x = 0.0f, .y = -1.0f, .z = 0.0f}, {.x = 0.0f, .y = -1.0f, .z = 0.0f},
+		{.x = 0.0f, .y = -1.0f, .z = 0.0f}, {.x = 0.0f, .y = -1.0f, .z = 0.0f},
+		{.x = 1.0f, .y = 0.0f, .z = 0.0f},	{.x = 1.0f, .y = 0.0f, .z = 0.0f},
+		{.x = 1.0f, .y = 0.0f, .z = 0.0f},	{.x = 1.0f, .y = 0.0f, .z = 0.0f},
+		{.x = -1.0f, .y = 0.0f, .z = 0.0f}, {.x = -1.0f, .y = 0.0f, .z = 0.0f},
+		{.x = -1.0f, .y = 0.0f, .z = 0.0f}, {.x = -1.0f, .y = 0.0f, .z = 0.0f},
+	};
+
+	mesh.vertexCount = verts.size();
+	mesh.vertices =
+		reinterpret_cast<float*>(std::malloc(24 * 3 * sizeof(float)));
+	std::memcpy(mesh.vertices, verts.data(), 24 * 3 * sizeof(float));
+	mesh.texcoords =
+		reinterpret_cast<float*>(std::malloc(24 * 2 * sizeof(float)));
+	std::memcpy(mesh.texcoords, UVs.data(), 24 * 2 * sizeof(float));
+	mesh.normals =
+		reinterpret_cast<float*>(std::malloc(24 * 3 * sizeof(float)));
+	std::memcpy(mesh.normals, normals.data(), 24 * 3 * sizeof(float));
+
+	mesh.indices =
+		reinterpret_cast<uint16_t*>(std::malloc(36 * sizeof(uint16_t)));
+
+	int k = 0;
+	for (int i = 0; i < 36; i += 6)
+	{
+		mesh.indices[i] = 4 * k;
+		mesh.indices[i + 1] = 4 * k + 1;
+		mesh.indices[i + 2] = 4 * k + 2;
+		mesh.indices[i + 3] = 4 * k;
+		mesh.indices[i + 4] = 4 * k + 2;
+		mesh.indices[i + 5] = 4 * k + 3;
+
+		k++;
+	}
+
+	mesh.vertexCount = 24;
+	mesh.triangleCount = 12;
+
+	return {pos, mesh, col};
+}
+
+} //namespace phys

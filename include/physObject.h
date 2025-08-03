@@ -1,6 +1,9 @@
 #pragma once
 
+#include "collider.h"
+
 #include <raylib.h>
+#include <raymath.h>
 
 namespace phys
 {
@@ -8,8 +11,12 @@ namespace phys
 class PhysObject
 {
 	public:
-	PhysObject();
+	PhysObject(const Vector3 pos, const Mesh mesh, Collider* col);
 
+	[[nodiscard]] Matrix GetTransformM() const
+	{
+		return MatrixMultiply(MatrixMultiply(scale, rotation), position);
+	}
 	[[nodiscard]] Vector3 GetPosition() const
 	{
 		return {position.m12, position.m13, position.m14};
@@ -21,11 +28,18 @@ class PhysObject
 		position.m14 = newPos.z;
 	}
 
+	Collider* collider;
+	Mesh mesh;
+
 	private:
+	Vector3 velocity;
+
 	Matrix position;
 	Matrix rotation;
 	Matrix scale;
-	Vector3 velocity;
+
 };
+
+PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims);
 
 } //namespace phys
