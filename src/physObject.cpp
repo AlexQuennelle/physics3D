@@ -1,10 +1,8 @@
 #include "physObject.h"
 #include "collider.h"
 
-#include <array>
 #include <cstdint>
 #include <cstring>
-#include <iostream>
 #include <raylib.h>
 #include <raymath.h>
 
@@ -23,20 +21,8 @@ PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Collider* col)
 
 PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)
 {
+	// TODO: Make rotation work
 	MeshCollider* col = CreateBoxCollider(MatrixIdentity());
-	//auto mesh = GenMeshCube(dims.x, dims.y, dims.z);
-	//UnloadMesh(mesh);
-	//for (int i{0}; i < mesh.vertexCount; i++)
-	//{
-	//	mesh.vertices[(i * 3) + 0] += 0.5f;
-	//	mesh.vertices[(i * 3) + 1] += 0.5f;
-	//	mesh.vertices[(i * 3) + 2] += 0.5f;
-	//	std::cout << " (" << mesh.vertices[(i * 3) + 0];
-	//	std::cout << ", " << mesh.vertices[(i * 3) + 1];
-	//	std::cout << ", " << mesh.vertices[(i * 3) + 2];
-	//	std::cout << ")\n";
-	//}
-	//UploadMesh(&mesh, false);
 	Mesh mesh;
 	vector<Vector3> verts{
 		{.x = 0.0f, .y = 0.0f, .z = dims.z},
@@ -99,17 +85,17 @@ PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)
 	mesh.indices =
 		reinterpret_cast<uint16_t*>(std::malloc(36 * sizeof(uint16_t)));
 
-	int k = 0;
+	int k__ = 0;
 	for (int i = 0; i < 36; i += 6)
 	{
-		mesh.indices[i] = 4 * k;
-		mesh.indices[i + 1] = 4 * k + 1;
-		mesh.indices[i + 2] = 4 * k + 2;
-		mesh.indices[i + 3] = 4 * k;
-		mesh.indices[i + 4] = 4 * k + 2;
-		mesh.indices[i + 5] = 4 * k + 3;
+		mesh.indices[i] = 4 * k__;
+		mesh.indices[i + 1] = 4 * k__ + 1;
+		mesh.indices[i + 2] = 4 * k__ + 2;
+		mesh.indices[i + 3] = 4 * k__;
+		mesh.indices[i + 4] = 4 * k__ + 2;
+		mesh.indices[i + 5] = 4 * k__ + 3;
 
-		k++;
+		k__++;
 	}
 
 	mesh.vertexCount = 24;
