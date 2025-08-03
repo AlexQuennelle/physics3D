@@ -19,36 +19,45 @@ PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Collider* col)
 	this->collider = col;
 }
 
+void PhysObject::Update()
+{
+	// TODO: Implement update logic
+}
+void PhysObject::Draw() const
+{
+	DrawMesh(this->mesh, LoadMaterialDefault(), this->GetTransformM());
+}
+
 PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)
 {
 	// TODO: Make rotation work
 	MeshCollider* col = CreateBoxCollider(MatrixIdentity());
 	Mesh mesh;
 	vector<Vector3> verts{
-		{.x = 0.0f, .y = 0.0f, .z = dims.z},
-		{.x = dims.x, .y = 0.0f, .z = dims.z},
-		{.x = dims.x, .y = dims.y, .z = dims.z},
-		{.x = 0.0f, .y = dims.y, .z = dims.z},
-		{.x = 0.0f, .y = 0.0f, .z = 0.0f},
-		{.x = 0.0f, .y = dims.y, .z = 0.0f},
-		{.x = dims.x, .y = dims.y, .z = 0.0f},
-		{.x = dims.x, .y = 0.0f, .z = 0.0f},
-		{.x = 0.0f, .y = dims.y, .z = 0.0f},
-		{.x = 0.0f, .y = dims.y, .z = dims.z},
-		{.x = dims.x, .y = dims.y, .z = dims.z},
-		{.x = dims.x, .y = dims.y, .z = 0.0f},
-		{.x = 0.0f, .y = 0.0f, .z = 0.0f},
-		{.x = dims.x, .y = 0.0f, .z = 0.0f},
-		{.x = dims.x, .y = 0.0f, .z = dims.z},
-		{.x = 0.0f, .y = 0.0f, .z = dims.z},
-		{.x = dims.x, .y = 0.0f, .z = 0.0f},
-		{.x = dims.x, .y = dims.y, .z = 0.0f},
-		{.x = dims.x, .y = dims.y, .z = dims.z},
-		{.x = dims.x, .y = 0.0f, .z = dims.z},
-		{.x = 0.0f, .y = 0.0f, .z = 0.0f},
-		{.x = 0.0f, .y = 0.0f, .z = dims.z},
-		{.x = 0.0f, .y = dims.y, .z = dims.z},
-		{.x = 0.0f, .y = dims.y, .z = 0.0f},
+		{.x = -dims.x / 2, .y = -dims.y / 2, .z = dims.z / 2},
+		{.x = dims.x / 2, .y = -dims.y / 2, .z = dims.z / 2},
+		{.x = dims.x / 2, .y = dims.y / 2, .z = dims.z / 2},
+		{.x = -dims.x / 2, .y = dims.y / 2, .z = dims.z / 2},
+		{.x = -dims.x / 2, .y = -dims.y / 2, .z = -dims.z / 2},
+		{.x = -dims.x / 2, .y = dims.y / 2, .z = -dims.z / 2},
+		{.x = dims.x / 2, .y = dims.y / 2, .z = -dims.z / 2},
+		{.x = dims.x / 2, .y = -dims.y / 2, .z = -dims.z / 2},
+		{.x = -dims.x / 2, .y = dims.y / 2, .z = -dims.z / 2},
+		{.x = -dims.x / 2, .y = dims.y / 2, .z = dims.z / 2},
+		{.x = dims.x / 2, .y = dims.y / 2, .z = dims.z / 2},
+		{.x = dims.x / 2, .y = dims.y / 2, .z = -dims.z / 2},
+		{.x = -dims.x / 2, .y = -dims.y / 2, .z = -dims.z / 2},
+		{.x = dims.x / 2, .y = -dims.y / 2, .z = -dims.z / 2},
+		{.x = dims.x / 2, .y = -dims.y / 2, .z = dims.z / 2},
+		{.x = -dims.x / 2, .y = -dims.y / 2, .z = dims.z / 2},
+		{.x = dims.x / 2, .y = -dims.y / 2, .z = -dims.z / 2},
+		{.x = dims.x / 2, .y = dims.y / 2, .z = -dims.z / 2},
+		{.x = dims.x / 2, .y = dims.y / 2, .z = dims.z / 2},
+		{.x = dims.x / 2, .y = -dims.y / 2, .z = dims.z / 2},
+		{.x = -dims.x / 2, .y = -dims.y / 2, .z = -dims.z / 2},
+		{.x = -dims.x / 2, .y = -dims.y / 2, .z = dims.z / 2},
+		{.x = -dims.x / 2, .y = dims.y / 2, .z = dims.z / 2},
+		{.x = -dims.x / 2, .y = dims.y / 2, .z = -dims.z / 2},
 	};
 	vector<float> UVs{
 		0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,

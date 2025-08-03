@@ -144,10 +144,14 @@ vector<Vector3> CompoundCollider::GetNormals() const
 MeshCollider* CreateBoxCollider(Matrix transform)
 {
 	vector<Vector3> verts{
-		{.x = 0.0f, .y = 0.0f, .z = 0.0f}, {.x = 1.0f, .y = 0.0f, .z = 0.0f},
-		{.x = 0.0f, .y = 1.0f, .z = 0.0f}, {.x = 1.0f, .y = 0.0f, .z = 1.0f},
-		{.x = 0.0f, .y = 0.0f, .z = 1.0f}, {.x = 1.0f, .y = 1.0f, .z = 0.0f},
-		{.x = 0.0f, .y = 1.0f, .z = 1.0f}, {.x = 1.0f, .y = 1.0f, .z = 1.0f},
+		{.x = -0.5f, .y = -0.5f, .z = -0.5f},
+		{.x = 0.5f, .y = -0.5f, .z = -0.5f},
+		{.x = -0.5f, .y = 0.5f, .z = -0.5f},
+		{.x = 0.5f, .y = -0.5f, .z = 0.5f},
+		{.x = -0.5f, .y = -0.5f, .z = 0.5f},
+		{.x = 0.5f, .y = 0.5f, .z = -0.5f},
+		{.x = -0.5f, .y = 0.5f, .z = 0.5f},
+		{.x = 0.5f, .y = 0.5f, .z = 0.5f},
 	};
 	vector<Vector3> nors{
 		{.x = 1.0f, .y = 0.0f, .z = 0.0f},

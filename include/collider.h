@@ -95,6 +95,7 @@ class MeshCollider : public Collider
 
 	vector<Vector3> vertices;
 	vector<Vector3> normals;
+
 	private:
 };
 
@@ -132,7 +133,7 @@ std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
 									 const Collider* col2, const Matrix trans2);
 
 /**
- * Creates a rectangular mesh collider with one corner at (0, 0, 0).
+ * Creates a rectangular mesh collider centered on (0, 0, 0).
  * @param transform A transformation matrix.
  */
 MeshCollider* CreateBoxCollider(Matrix transform);
