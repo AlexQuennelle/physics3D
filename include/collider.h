@@ -64,7 +64,7 @@ class Collider
 class CompoundCollider : public Collider
 {
 	public:
-	CompoundCollider();
+	CompoundCollider(const vector<Collider*>& cols);
 
 	/** @copydoc Collider::GetTransformed() */
 	[[nodiscard]] vector<Collider*>
@@ -73,7 +73,7 @@ class CompoundCollider : public Collider
 	[[nodiscard]] vector<Vector3> GetNormals() const override;
 
 	private:
-	vector<Collider> colliders;
+	vector<Collider*> colliders;
 };
 
 /** Polygonal Mesh collider */
@@ -142,6 +142,7 @@ MeshCollider* CreateBoxCollider(Matrix transform);
 ostream& operator<<(ostream& ostr, HitObj hit);
 ostream& operator<<(ostream& ostr, Vector3 vec);
 ostream& operator<<(ostream& ostr, Range range);
+ostream& operator<<(ostream& ostr, Matrix mat);
 #endif // !NDEBUG
 
 } //namespace phys

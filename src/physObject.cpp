@@ -103,7 +103,6 @@ PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)
 		{.x = -1.0f, .y = 0.0f, .z = 0.0f}, {.x = -1.0f, .y = 0.0f, .z = 0.0f},
 	};
 
-	mesh.vertexCount = verts.size();
 	mesh.vertices =
 		reinterpret_cast<float*>(std::malloc(24 * 3 * sizeof(float)));
 	std::memcpy(mesh.vertices, verts.data(), 24 * 3 * sizeof(float));

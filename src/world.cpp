@@ -3,11 +3,13 @@
 #include "physObject.h"
 
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <raylib.h>
+#include <raymath.h>
 
 namespace phys
 {
-
 World::World()
 {
 	using namespace std::numbers;
@@ -23,8 +25,57 @@ World::World()
 
 	this->objects.push_back(
 		CreateBoxObject({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}));
-	this->objects.push_back(
-		CreateBoxObject({0.0f, 0.0f, 1.1f}, {1.0f, 1.0f, 1.0f}));
+	//this->objects.push_back(
+	//	CreateBoxObject({0.0f, 0.0f, 1.1f}, {1.0f, 1.0f, 1.0f}));
+	// HACK: The following is a hack for testing purposes.
+	Model model = LoadModel(RESOURCES_PATH "stairs.obj");
+	//UnloadModel(model);
+
+	Mesh modelMesh = model.meshes[0];
+	Mesh mesh;
+	mesh.vertexCount = modelMesh.vertexCount;
+	mesh.vertices = reinterpret_cast<float*>(
+		std::malloc(mesh.vertexCount * 3 * sizeof(float)));
+	std::memcpy(mesh.vertices, modelMesh.vertices,
+				mesh.vertexCount * 3 * sizeof(float));
+	mesh.texcoords = reinterpret_cast<float*>(
+		std::malloc(mesh.vertexCount * 2 * sizeof(float)));
+	std::memcpy(mesh.texcoords, modelMesh.texcoords,
+				mesh.vertexCount * 2 * sizeof(float));
+	mesh.normals = reinterpret_cast<float*>(
+		std::malloc(mesh.vertexCount * 3 * sizeof(float)));
+	std::memcpy(mesh.normals, modelMesh.normals,
+				mesh.vertexCount * 3 * sizeof(float));
+	mesh.triangleCount = modelMesh.triangleCount;
+	//mesh.indices = reinterpret_cast<uint16_t*>(
+	//	std::malloc(mesh.triangleCount * 3 * sizeof(uint16_t)));
+	//std::memcpy(mesh.indices, modelMesh.indices,
+	//			mesh.triangleCount * 3 * sizeof(uint16_t));
+	UnloadModel(model);
+
+	//MeshCollider* col = CreateBoxCollider(MatrixScale(0.5f, 0.5f, 0.5f));
+	auto* col = new CompoundCollider({
+		CreateBoxCollider(MatrixScale(1.0f, 1.0f, 0.5f) *
+						  MatrixTranslate(0.0f, 0.0f, 0.25f)),
+		CreateBoxCollider(MatrixScale(1.0f, 0.5f, 0.5f) *
+						  MatrixTranslate(0.0f, -0.25f, -0.25f)),
+	});
+	this->objects.emplace_back(*new PhysObject({0.0f, 0.0f, 1.1f}, mesh, col));
+	//objects[1].Rotate(
+	//	QuaternionFromAxisAngle({1.0f, 0.0f, 0.0f}, -pi_v<float> / 4));
+	//std::optional<HitObj> colObj = CheckCollision(
+	//	this->objects[0].GetCollider(), this->objects[0].GetTransformM(),
+	//	this->objects[1].GetCollider(), this->objects[1].GetTransformM());
+	//if (colObj.has_value())
+	//{
+	//	this->objects[0].SetShaderCol({1.0f, 0.0f, 0.0f, 1.0f});
+	//	this->objects[1].SetShaderCol({1.0f, 0.0f, 0.0f, 1.0f});
+	//}
+	//else
+	//{
+	//	this->objects[0].SetShaderCol({0.0f, 1.0f, 0.0f, 1.0f});
+	//	this->objects[1].SetShaderCol({0.0f, 1.0f, 0.0f, 1.0f});
+	//}
 }
 
 void World::Update()
@@ -47,13 +98,15 @@ void World::Update()
 			std::optional<HitObj> col =
 				CheckCollision(obj1.GetCollider(), obj1.GetTransformM(),
 							   obj2.GetCollider(), obj2.GetTransformM());
-			if(col.has_value())
+			if (col.has_value())
 			{
-				obj1.SetShaderCol({1.0f,0.0f,0.0f,1.0f});
-				obj2.SetShaderCol({1.0f,0.0f,0.0f,1.0f});
-			} else {
-				obj1.SetShaderCol({0.0f,1.0f,0.0f,1.0f});
-				obj2.SetShaderCol({0.0f,1.0f,0.0f,1.0f});
+				obj1.SetShaderCol({1.0f, 0.0f, 0.0f, 1.0f});
+				obj2.SetShaderCol({1.0f, 0.0f, 0.0f, 1.0f});
+			}
+			else
+			{
+				obj1.SetShaderCol({0.0f, 1.0f, 0.0f, 1.0f});
+				obj2.SetShaderCol({0.0f, 1.0f, 0.0f, 1.0f});
 			}
 		}
 	}

@@ -70,7 +70,7 @@ std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
 	{
 		HitObj hitObj{
 			.ThisCol = col1, .OtherCol = col2, .HitPos = {0.0f, 0.0f, 0.0f}};
-		return hitObj; 
+		return hitObj;
 	}
 	return {};
 }
@@ -81,6 +81,7 @@ MeshCollider::MeshCollider(const vector<Vector3>& verts,
 	this->vertices.insert(this->vertices.end(), verts.begin(), verts.end());
 	this->normals.insert(this->normals.end(), nors.begin(), nors.end());
 }
+// TODO: Remove unused function.
 MeshCollider MeshCollider::operator*(const Matrix& mat)
 {
 	vector<Vector3> newVerts = this->vertices;
@@ -98,17 +99,27 @@ MeshCollider MeshCollider::operator*(const Matrix& mat)
 
 vector<Collider*> MeshCollider::GetTransformed(const Matrix trans) const
 {
+#ifdef VERBOSELOG_COL
+	std::cout << trans << '\n';
+#endif // VERBOSELOG_COL
 	vector<Vector3> newVerts;
 	newVerts.reserve(this->vertices.size());
 	for (auto vert : this->vertices)
 	{
+#ifdef VERBOSELOG_COL
+		std::cout << vert << Vector3Transform(vert, trans);
+		std::cout << '\n';
+#endif
 		newVerts.push_back(Vector3Transform(vert, trans));
 	}
+#ifdef VERBOSELOG_COL
+	std::cout << '\n';
+#endif
 	vector<Vector3> newNors;
 	newNors.reserve(this->normals.size());
 	for (auto nor : this->normals)
 	{
-		newNors.push_back(Vector3Transform(nor, trans));
+		newNors.push_back(Vector3Normalize(Vector3Transform(nor, trans)));
 	}
 	vector<Collider*> cols{new MeshCollider(newVerts, newNors)};
 	return cols;
@@ -134,7 +145,7 @@ vector<Collider*> CompoundCollider::GetTransformed(const Matrix trans) const
 	vector<Collider*> cols;
 	for (const auto& elem : this->colliders)
 	{
-		vector<Collider*> transformed = elem.GetTransformed(trans);
+		vector<Collider*> transformed = elem->GetTransformed(trans);
 		cols.insert(cols.end(), transformed.begin(), transformed.end());
 	}
 	return cols;
@@ -144,7 +155,7 @@ vector<Vector3> CompoundCollider::GetNormals() const
 	vector<Vector3> nors;
 	for (const auto& col : this->colliders)
 	{
-		auto colNors = col.GetNormals();
+		auto colNors = col->GetNormals();
 		nors.insert(nors.end(), colNors.begin(), colNors.end());
 	}
 	return nors;
@@ -152,7 +163,10 @@ vector<Vector3> CompoundCollider::GetNormals() const
 
 MeshCollider* CreateBoxCollider(Matrix transform)
 {
-	vector<Vector3> verts{
+#ifdef VERBOSELOG_COL
+	std::cout << transform << '\n';
+#endif
+	static const vector<Vector3> verts{
 		{.x = -0.5f, .y = -0.5f, .z = -0.5f},
 		{.x = 0.5f, .y = -0.5f, .z = -0.5f},
 		{.x = -0.5f, .y = 0.5f, .z = -0.5f},
@@ -162,20 +176,36 @@ MeshCollider* CreateBoxCollider(Matrix transform)
 		{.x = -0.5f, .y = 0.5f, .z = 0.5f},
 		{.x = 0.5f, .y = 0.5f, .z = 0.5f},
 	};
-	vector<Vector3> nors{
+	vector<Vector3> newVerts;
+	static const vector<Vector3> nors{
 		{.x = 1.0f, .y = 0.0f, .z = 0.0f},
 		{.x = 0.0f, .y = 1.0f, .z = 0.0f},
 		{.x = 0.0f, .y = 0.0f, .z = 1.0f},
 	};
+	vector<Vector3> newNors;
+
+	newVerts.reserve(verts.size());
 	for (auto vert : verts)
 	{
-		Vector3Transform(vert, transform);
+		newVerts.push_back(Vector3Transform(vert, transform));
 	}
+#ifdef VERBOSELOG_COL
+	for (auto vert : newVerts)
+	{
+		std::cout << vert << '\n';
+	}
+#endif // VERBOSELOG_COL
+	newNors.reserve(nors.size());
 	for (auto nor : nors)
 	{
-		Vector3Transform(nor, transform);
+		newNors.push_back(Vector3Normalize(Vector3Transform(nor, transform)));
 	}
-	return new MeshCollider(verts, nors);
+	return new MeshCollider(newVerts, newNors);
+}
+
+CompoundCollider::CompoundCollider(const vector<Collider*>& cols)
+{
+	this->colliders = cols;
 }
 
 #ifndef NDEBUG
@@ -192,6 +222,16 @@ ostream& operator<<(ostream& ostr, Vector3 vec)
 ostream& operator<<(ostream& ostr, Range range)
 {
 	ostr << range.min << "–" << range.max;
+	return ostr;
+}
+ostream& operator<<(ostream& ostr, Matrix mat)
+{
+	// TODO: Add overload for quaternion printing.
+	Vector3 scale;
+	Vector3 pos;
+	Quaternion rot;
+	MatrixDecompose(mat, &pos, &rot, &scale);
+	std::cout << "[p: " << pos << /*", r: " << rot <<*/ ", s: " << scale << "]";
 	return ostr;
 }
 #endif // !NDEBUG
