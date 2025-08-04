@@ -113,8 +113,8 @@ class SphereCollider : public Collider
 struct HitObj
 {
 	public:
-	const Collider& ThisCol;
-	const Collider& OtherCol;
+	const Collider* ThisCol;
+	const Collider* OtherCol;
 	Vector3 HitPos{0.0f, 0.0f, 0.0f};
 };
 

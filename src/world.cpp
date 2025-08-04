@@ -1,6 +1,8 @@
 #include "world.h"
+#include "collider.h"
 #include "physObject.h"
 
+#include <cstdint>
 #include <raylib.h>
 
 namespace phys
@@ -33,6 +35,27 @@ void World::Update()
 	for (auto obj : this->objects)
 	{
 		obj.Update();
+	}
+	for (uint32_t i{0}; i < this->objects.size(); i++)
+	{
+		auto obj1 = this->objects[i];
+		for (uint32_t j{0}; j < this->objects.size(); j++)
+		{
+			if (i == j)
+				break;
+			auto obj2 = this->objects[j];
+			std::optional<HitObj> col =
+				CheckCollision(obj1.GetCollider(), obj1.GetTransformM(),
+							   obj2.GetCollider(), obj2.GetTransformM());
+			if(col.has_value())
+			{
+				obj1.SetShaderCol({1.0f,0.0f,0.0f,1.0f});
+				obj2.SetShaderCol({1.0f,0.0f,0.0f,1.0f});
+			} else {
+				obj1.SetShaderCol({0.0f,1.0f,0.0f,1.0f});
+				obj2.SetShaderCol({0.0f,1.0f,0.0f,1.0f});
+			}
+		}
 	}
 	this->UpdateCamera();
 	BeginDrawing();

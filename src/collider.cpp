@@ -7,6 +7,7 @@
 #include <raymath.h>
 #include <vector>
 #ifndef NDEBUG
+//#define VERBOSELOG_COL
 #include "utils.h"
 #include <ostream>
 #endif // !NDEBUG
@@ -24,7 +25,7 @@ std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
 {
 	vector<Collider*> cols1 = col1->GetTransformed(trans1);
 	vector<Collider*> cols2 = col2->GetTransformed(trans2);
-	std::cout << cols1.size() << '\n';
+	bool collision = false;
 	for (const auto& collider1 : cols1)
 	{
 		for (const auto& collider2 : cols2)
@@ -32,35 +33,44 @@ std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
 			vector<Vector3> nors = collider1->GetNormals();
 			vector<Vector3> nors2 = collider2->GetNormals();
 			nors.insert(nors.end(), nors2.begin(), nors2.end());
+			bool hit = true;
 			for (const auto nor : nors)
 			{
 				Range proj1 = collider1->GetProjection(nor);
 				Range proj2 = collider2->GetProjection(nor);
-#ifndef NDEBUG
+#ifdef VERBOSELOG_COL
 				std::cout << proj1 << '\n';
 				std::cout << proj2 << '\n';
-#endif // !NDEBUG
+#endif // !VERBOSELOG_COL
 				bool overlapped =
 					proj1.min <= proj2.max && proj2.min <= proj1.max;
 				if (overlapped)
 				{
-#ifndef NDEBUG
+#ifdef VERBOSELOG_COL
 					SetTextColor({0, 255, 0, 255});
 					std::cout << nor << " Hit!\n";
 					ClearStyles();
-#endif // !NDEBUG
+#endif // !VERBOSELOG_COL
 				}
 				else
 				{
-#ifndef NDEBUG
+#ifdef VERBOSELOG_COL
 					SetTextColor({255, 255, 0, 255});
 					std::cout << "Miss!\n";
 					ClearStyles();
-#endif // !NDEBUG
+#endif // !VERBOSELOG_COL
+					hit = false;
 					break;
 				}
 			}
+			collision |= hit;
 		}
+	}
+	if (collision)
+	{
+		HitObj hitObj{
+			.ThisCol = col1, .OtherCol = col2, .HitPos = {0.0f, 0.0f, 0.0f}};
+		return hitObj; 
 	}
 	return {};
 }
@@ -88,7 +98,6 @@ MeshCollider MeshCollider::operator*(const Matrix& mat)
 
 vector<Collider*> MeshCollider::GetTransformed(const Matrix trans) const
 {
-	std::cout << "test";
 	vector<Vector3> newVerts;
 	newVerts.reserve(this->vertices.size());
 	for (auto vert : this->vertices)
@@ -102,17 +111,17 @@ vector<Collider*> MeshCollider::GetTransformed(const Matrix trans) const
 		newNors.push_back(Vector3Transform(nor, trans));
 	}
 	vector<Collider*> cols{new MeshCollider(newVerts, newNors)};
-	std::cout << cols.size() << '\n';
 	return cols;
 }
 vector<Vector3> MeshCollider::GetNormals() const { return {this->normals}; }
 Range MeshCollider::GetProjection(const Vector3 nor) const
 {
-	Range proj{.min = std::numeric_limits<float>::max(),
-			   .max = std::numeric_limits<float>::min()};
+	Range proj{
+		.min = std::numeric_limits<float>::max(),
+		.max = std::numeric_limits<float>::min(),
+	};
 	for (const auto vert : this->vertices)
 	{
-		std::cout << vert << '\n';
 		float projected = Vector3DotProduct(vert, nor);
 		proj.min = projected < proj.min ? projected : proj.min;
 		proj.max = projected > proj.max ? projected : proj.max;

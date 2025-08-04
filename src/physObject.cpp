@@ -5,6 +5,7 @@
 #include <cstring>
 #include <raylib.h>
 #include <raymath.h>
+#include <rlgl.h>
 
 namespace phys
 {
@@ -17,6 +18,21 @@ PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Collider* col)
 	this->mesh = mesh;
 	UploadMesh(&this->mesh, false);
 	this->collider = col;
+	this->material = LoadMaterialDefault();
+}
+PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Collider* col,
+					   const Shader& shader)
+{
+	this->position = MatrixTranslate(pos.x, pos.y, pos.z);
+	this->rotation = MatrixRotate({0.0f, 1.0f, 0.0f}, 0.0f);
+	this->scale = MatrixScale(1.0f, 1.0f, 1.0f);
+	this->mesh = mesh;
+	UploadMesh(&this->mesh, false);
+	this->collider = col;
+	this->material = LoadMaterialDefault();
+	this->SetShader(shader);
+	this->ColLoc = GetShaderLocation(this->shader,"col");
+	this->SetShaderCol({0.0f,1.0f,0.0f,1.0f});
 }
 
 void PhysObject::Update()
@@ -25,15 +41,22 @@ void PhysObject::Update()
 }
 void PhysObject::Draw() const
 {
-	DrawMesh(this->mesh, LoadMaterialDefault(), this->GetTransformM());
+	DrawMesh(this->mesh, this->material, this->GetTransformM());
+	//rlEnableWireMode();
+	//DrawMesh(this->mesh, LoadMaterialDefault(), this->GetTransformM());
+	//rlDisableWireMode();
 }
 
 PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)
 {
 	// TODO: Make rotation work
-	MeshCollider* col = CreateBoxCollider(MatrixIdentity());
+	MeshCollider* col = CreateBoxCollider(MatrixScale(dims.x, dims.y, dims.z));
 	Mesh mesh;
-	vector<Vector3> verts{
+	static const Shader shader =
+		LoadShader(RESOURCES_PATH "shaders/litShader.vert",
+				   RESOURCES_PATH "shaders/litShader.frag");
+
+	const vector<Vector3> verts{
 		{.x = -dims.x / 2, .y = -dims.y / 2, .z = dims.z / 2},
 		{.x = dims.x / 2, .y = -dims.y / 2, .z = dims.z / 2},
 		{.x = dims.x / 2, .y = dims.y / 2, .z = dims.z / 2},
@@ -59,13 +82,13 @@ PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)
 		{.x = -dims.x / 2, .y = dims.y / 2, .z = dims.z / 2},
 		{.x = -dims.x / 2, .y = dims.y / 2, .z = -dims.z / 2},
 	};
-	vector<float> UVs{
+	static const vector<float> UVs{
 		0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
 		0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
 		1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
 		0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,
 	};
-	vector<Vector3> normals{
+	const vector<Vector3> normals{
 		{.x = 0.0f, .y = 0.0f, .z = 1.0f},	{.x = 0.0f, .y = 0.0f, .z = 1.0f},
 		{.x = 0.0f, .y = 0.0f, .z = 1.0f},	{.x = 0.0f, .y = 0.0f, .z = 1.0f},
 		{.x = 0.0f, .y = 0.0f, .z = -1.0f}, {.x = 0.0f, .y = 0.0f, .z = -1.0f},
@@ -110,7 +133,7 @@ PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)
 	mesh.vertexCount = 24;
 	mesh.triangleCount = 12;
 
-	return {pos, mesh, col};
+	return {pos, mesh, col, shader};
 }
 
 } //namespace phys

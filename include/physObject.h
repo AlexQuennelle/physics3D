@@ -12,6 +12,8 @@ class PhysObject
 {
 	public:
 	PhysObject(const Vector3 pos, const Mesh mesh, Collider* col);
+	PhysObject(const Vector3 pos, const Mesh mesh, Collider* col,
+			   const Shader& shader);
 
 	void Update();
 	void Draw() const;
@@ -32,19 +34,35 @@ class PhysObject
 		MatrixDecompose(this->rotation, &translation, &rot, &scale);
 		return rot;
 	}
+
 	void SetPosition(const Vector3& newPos)
 	{
 		position.m12 = newPos.x;
 		position.m13 = newPos.y;
 		position.m14 = newPos.z;
 	}
+	void SetRotation(const Matrix& newRot) { this->rotation = newRot; }
+	void SetRotation(const Quaternion& newRot)
+	{
+		this->rotation = QuaternionToMatrix(newRot);
+	}
+
 	void Rotate(const Quaternion& rot)
 	{
 		rotation = rotation * QuaternionToMatrix(rot);
 	}
 
-	Collider* collider;
-	Mesh mesh;
+	[[nodiscard]] Collider* GetCollider() const { return this->collider; }
+	void SetShader(const Shader& newShader)
+	{
+		this->shader = newShader;
+		this->material.shader = this->shader;
+	}
+
+	void SetShaderCol(Vector4 color) const
+	{
+		SetShaderValue(this->shader, this->ColLoc, &color, SHADER_UNIFORM_VEC4);
+	}
 
 	private:
 	Vector3 velocity;
@@ -53,6 +71,14 @@ class PhysObject
 	Matrix rotation;
 	Matrix scale;
 
+	Material material;
+	Shader shader;
+
+	Collider* collider;
+	Mesh mesh;
+
+	//debug stuff
+	int ColLoc;
 };
 
 PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims);
