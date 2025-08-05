@@ -32,7 +32,7 @@ class Collider
 	/**
 	 * Applies a transformation matrix to a Collider and returns it in a
 	 * vector.
-	 * @returns A vector of Colliders transformed by the supplied matrix. The
+	 * \returns A vector of Colliders transformed by the supplied matrix. The
 	 * Vector may contain multiple Colliders.
 	 */
 	[[nodiscard]] virtual vector<Collider*>
@@ -66,10 +66,10 @@ class CompoundCollider : public Collider
 	public:
 	CompoundCollider(const vector<Collider*>& cols);
 
-	/** @copydoc Collider::GetTransformed() */
+	/** \copydoc Collider::GetTransformed() */
 	[[nodiscard]] vector<Collider*>
 	GetTransformed(const Matrix trans) const override;
-	/** @copydoc Collider::GetNormals() */
+	/** \copydoc Collider::GetNormals() */
 	[[nodiscard]] vector<Vector3> GetNormals() const override;
 
 	private:
@@ -82,12 +82,12 @@ class MeshCollider : public Collider
 	public:
 	MeshCollider(const vector<Vector3>& verts, const vector<Vector3>& nors);
 
-	/** @copydoc Collider::GetTransformed() */
+	/** \copydoc Collider::GetTransformed() */
 	[[nodiscard]] vector<Collider*>
 	GetTransformed(const Matrix trans) const override;
-	/** @copydoc Collider::GetNormals() */
+	/** \copydoc Collider::GetNormals() */
 	[[nodiscard]] vector<Vector3> GetNormals() const override;
-	/** @copydoc Collider::GetProjection() */
+	/** \copydoc Collider::GetProjection() */
 	[[nodiscard]] Range GetProjection(const Vector3 nor) const override;
 
 	/** Apply a transformation matrix to the Collider. */
@@ -121,12 +121,12 @@ struct HitObj
 /**
  * Checks if 2 colliders are overlapping
  *
- * @params col1 The first collider to check
- * @params trans1 The transform of the object associated with col1
- * @params col2 The first collider to check
- * @params trans2 The transform of the object associated with col1
+ * \param col1 The first collider to check
+ * \param trans1 The transform of the object associated with col1
+ * \param col2 The first collider to check
+ * \param trans2 The transform of the object associated with col1
  *
- * @returns A Hit Object struct if the colliders overlap, otheriwse returns
+ * \returns A Hit Object struct if the colliders overlap, otheriwse returns
  * nothing.
  */
 std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
@@ -134,7 +134,6 @@ std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
 
 /**
  * Creates a rectangular mesh collider centered on (0, 0, 0).
- * @param transform A transformation matrix.
  */
 MeshCollider* CreateBoxCollider(Matrix transform);
 
@@ -143,6 +142,7 @@ ostream& operator<<(ostream& ostr, HitObj hit);
 ostream& operator<<(ostream& ostr, Vector3 vec);
 ostream& operator<<(ostream& ostr, Range range);
 ostream& operator<<(ostream& ostr, Matrix mat);
+ostream& operator<<(ostream& ostr, Quaternion quat);
 #endif // !NDEBUG
 
 } //namespace phys

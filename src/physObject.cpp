@@ -42,9 +42,6 @@ void PhysObject::Update()
 void PhysObject::Draw() const
 {
 	DrawMesh(this->mesh, this->material, this->GetTransformM());
-	//rlEnableWireMode();
-	//DrawMesh(this->mesh, LoadMaterialDefault(), this->GetTransformM());
-	//rlDisableWireMode();
 }
 
 PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)

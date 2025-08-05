@@ -81,21 +81,6 @@ MeshCollider::MeshCollider(const vector<Vector3>& verts,
 	this->vertices.insert(this->vertices.end(), verts.begin(), verts.end());
 	this->normals.insert(this->normals.end(), nors.begin(), nors.end());
 }
-// TODO: Remove unused function.
-MeshCollider MeshCollider::operator*(const Matrix& mat)
-{
-	vector<Vector3> newVerts = this->vertices;
-	for (auto vert : newVerts)
-	{
-		vert = Vector3Transform(vert, mat);
-	}
-	vector<Vector3> newNors = this->normals;
-	for (auto nor : newNors)
-	{
-		nor = Vector3Transform(nor, mat);
-	}
-	return {newVerts, newNors};
-}
 
 vector<Collider*> MeshCollider::GetTransformed(const Matrix trans) const
 {
@@ -226,12 +211,16 @@ ostream& operator<<(ostream& ostr, Range range)
 }
 ostream& operator<<(ostream& ostr, Matrix mat)
 {
-	// TODO: Add overload for quaternion printing.
 	Vector3 scale;
 	Vector3 pos;
 	Quaternion rot;
 	MatrixDecompose(mat, &pos, &rot, &scale);
-	std::cout << "[p: " << pos << /*", r: " << rot <<*/ ", s: " << scale << "]";
+	std::cout << "[p: " << pos << ", r: " << rot << ", s: " << scale << "]";
+	return ostr;
+}
+ostream& operator<<(ostream& ostr, Quaternion quat)
+{
+	std::cout << QuaternionToEuler(quat);
 	return ostr;
 }
 #endif // !NDEBUG

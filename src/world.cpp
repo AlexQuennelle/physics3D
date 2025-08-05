@@ -25,11 +25,8 @@ World::World()
 
 	this->objects.push_back(
 		CreateBoxObject({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}));
-	//this->objects.push_back(
-	//	CreateBoxObject({0.0f, 0.0f, 1.1f}, {1.0f, 1.0f, 1.0f}));
 	// HACK: The following is a hack for testing purposes.
 	Model model = LoadModel(RESOURCES_PATH "stairs.obj");
-	//UnloadModel(model);
 
 	Mesh modelMesh = model.meshes[0];
 	Mesh mesh;
@@ -47,13 +44,8 @@ World::World()
 	std::memcpy(mesh.normals, modelMesh.normals,
 				mesh.vertexCount * 3 * sizeof(float));
 	mesh.triangleCount = modelMesh.triangleCount;
-	//mesh.indices = reinterpret_cast<uint16_t*>(
-	//	std::malloc(mesh.triangleCount * 3 * sizeof(uint16_t)));
-	//std::memcpy(mesh.indices, modelMesh.indices,
-	//			mesh.triangleCount * 3 * sizeof(uint16_t));
 	UnloadModel(model);
 
-	//MeshCollider* col = CreateBoxCollider(MatrixScale(0.5f, 0.5f, 0.5f));
 	auto* col = new CompoundCollider({
 		CreateBoxCollider(MatrixScale(1.0f, 1.0f, 0.5f) *
 						  MatrixTranslate(0.0f, 0.0f, 0.25f)),
@@ -61,21 +53,6 @@ World::World()
 						  MatrixTranslate(0.0f, -0.25f, -0.25f)),
 	});
 	this->objects.emplace_back(*new PhysObject({0.0f, 0.0f, 1.1f}, mesh, col));
-	//objects[1].Rotate(
-	//	QuaternionFromAxisAngle({1.0f, 0.0f, 0.0f}, -pi_v<float> / 4));
-	//std::optional<HitObj> colObj = CheckCollision(
-	//	this->objects[0].GetCollider(), this->objects[0].GetTransformM(),
-	//	this->objects[1].GetCollider(), this->objects[1].GetTransformM());
-	//if (colObj.has_value())
-	//{
-	//	this->objects[0].SetShaderCol({1.0f, 0.0f, 0.0f, 1.0f});
-	//	this->objects[1].SetShaderCol({1.0f, 0.0f, 0.0f, 1.0f});
-	//}
-	//else
-	//{
-	//	this->objects[0].SetShaderCol({0.0f, 1.0f, 0.0f, 1.0f});
-	//	this->objects[1].SetShaderCol({0.0f, 1.0f, 0.0f, 1.0f});
-	//}
 }
 
 void World::Update()
@@ -118,6 +95,18 @@ void World::Update()
 	{
 		obj.Draw();
 	}
+	for (int i{-2}; i < 3; i++)
+	{
+		DrawLine3D({static_cast<float>(i), 0.0f, -2.5f},
+				   {static_cast<float>(i), 0.0f, 2.5f}, {100, 100, 100, 255});
+		DrawLine3D({-2.5f, 0.0f, static_cast<float>(i)},
+				   {2.5f, 0.0f, static_cast<float>(i)}, {100, 100, 100, 255});
+	}
+	DrawLine3D({0.0f, 0.0f, 0.0f}, {-2.5f, 0.0f, 0.0f}, {0, 0, 0, 255});
+	DrawLine3D({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -2.5f}, {0, 0, 0, 255});
+	DrawLine3D({0.0f, 0.0f, 0.0f}, {2.5f, 0.0f, 0.0f}, {255, 0, 0, 255});
+	DrawLine3D({0.0f, 0.0f, 0.0f}, {0.0f, 2.5f, 0.0f}, {0, 255, 0, 255});
+	DrawLine3D({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 2.5f}, {0, 0, 255, 255});
 	EndMode3D();
 	EndDrawing();
 }
