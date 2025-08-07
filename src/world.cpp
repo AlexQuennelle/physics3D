@@ -1,10 +1,14 @@
 #include "world.h"
 #include "collider.h"
 #include "physObject.h"
+#include "utils.h"
 
+#include <cassert>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
+#include <numbers>
 #include <raylib.h>
 #include <raymath.h>
 
@@ -12,6 +16,9 @@ namespace phys
 {
 World::World()
 {
+	SetTextColor(INFO);
+	std::cout << "Initializing World\n";
+	ClearStyles();
 	using namespace std::numbers;
 	cam = *new Camera(
 		{.position = Vector3RotateByAxisAngle(
@@ -25,34 +32,41 @@ World::World()
 
 	this->objects.push_back(
 		CreateBoxObject({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}));
+	std::cout << "Add Object\n";
 	// HACK: The following is a hack for testing purposes.
-	Model model = LoadModel(RESOURCES_PATH "stairs.obj");
-
-	Mesh modelMesh = model.meshes[0];
-	Mesh mesh;
-	mesh.vertexCount = modelMesh.vertexCount;
-	mesh.vertices = reinterpret_cast<float*>(
-		std::malloc(mesh.vertexCount * 3 * sizeof(float)));
-	std::memcpy(mesh.vertices, modelMesh.vertices,
-				mesh.vertexCount * 3 * sizeof(float));
-	mesh.texcoords = reinterpret_cast<float*>(
-		std::malloc(mesh.vertexCount * 2 * sizeof(float)));
-	std::memcpy(mesh.texcoords, modelMesh.texcoords,
-				mesh.vertexCount * 2 * sizeof(float));
-	mesh.normals = reinterpret_cast<float*>(
-		std::malloc(mesh.vertexCount * 3 * sizeof(float)));
-	std::memcpy(mesh.normals, modelMesh.normals,
-				mesh.vertexCount * 3 * sizeof(float));
-	mesh.triangleCount = modelMesh.triangleCount;
-	UnloadModel(model);
-
-	auto* col = new CompoundCollider({
-		CreateBoxCollider(MatrixScale(1.0f, 1.0f, 0.5f) *
-						  MatrixTranslate(0.0f, 0.0f, 0.25f)),
-		CreateBoxCollider(MatrixScale(1.0f, 0.5f, 0.5f) *
-						  MatrixTranslate(0.0f, -0.25f, -0.25f)),
-	});
-	this->objects.emplace_back(*new PhysObject({0.0f, 0.0f, 1.1f}, mesh, col));
+	// Model model = LoadModel(RESOURCES_PATH "stairs.obj");
+       
+	// Mesh modelMesh = model.meshes[0];
+	// Mesh mesh;
+	// mesh.vertexCount = modelMesh.vertexCount;
+	// mesh.vertices = reinterpret_cast<float*>(
+	// 	std::malloc(mesh.vertexCount * 3 * sizeof(float)));
+	// std::memcpy(mesh.vertices, modelMesh.vertices,
+	// 			mesh.vertexCount * 3 * sizeof(float));
+	// mesh.texcoords = reinterpret_cast<float*>(
+	// 	std::malloc(mesh.vertexCount * 2 * sizeof(float)));
+	// std::memcpy(mesh.texcoords, modelMesh.texcoords,
+	// 			mesh.vertexCount * 2 * sizeof(float));
+	// mesh.normals = reinterpret_cast<float*>(
+	// 	std::malloc(mesh.vertexCount * 3 * sizeof(float)));
+	// std::memcpy(mesh.normals, modelMesh.normals,
+	// 			mesh.vertexCount * 3 * sizeof(float));
+	// mesh.triangleCount = modelMesh.triangleCount;
+	// mesh.indices = reinterpret_cast<uint16_t*>(
+	// 	std::malloc(mesh.triangleCount * 3 * sizeof(uint16_t)));
+	// for (uint16_t i{0}; i < mesh.triangleCount * 3; i++)
+	// {
+	// 	mesh.indices[i] = i;
+	// }
+	// UnloadModel(model);
+       
+	// auto* col = new CompoundCollider({
+	// 	CreateBoxCollider(MatrixScale(1.0f, 1.0f, 0.5f) *
+	// 					  MatrixTranslate(0.0f, 0.0f, 0.25f)),
+	// 	CreateBoxCollider(MatrixScale(1.0f, 0.5f, 0.5f) *
+	// 					  MatrixTranslate(0.0f, -0.25f, -0.25f)),
+	// });
+	// this->objects.emplace_back(*new PhysObject({0.0f, 0.0f, 1.1f}, mesh, col));
 }
 
 void World::Update()
@@ -91,10 +105,11 @@ void World::Update()
 	BeginDrawing();
 	ClearBackground({100, 149, 237, 255});
 	BeginMode3D(cam);
-	for (auto obj : this->objects)
-	{
-		obj.Draw();
-	}
+	this->objects[0].Draw();
+	//for (auto obj : this->objects)
+	//{
+	//	obj.Draw();
+	//}
 	for (int i{-2}; i < 3; i++)
 	{
 		DrawLine3D({static_cast<float>(i), 0.0f, -2.5f},

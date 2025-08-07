@@ -50,10 +50,20 @@ if(EMSCRIPTEN)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}\
  --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/src/template.html"
     )
+    file(GLOB_RECURSE DATAFILES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/resources/*"
+    )
+    foreach(FILE ${DATAFILES})
+        get_filename_component(TRIMMED ${FILE} NAME)
+set_target_properties(
+            ${CMAKE_PROJECT_NAME} PROPERTIES LINK_FLAGS
+            "--preload-file ../resources/${TRIMMED}@./resources/${TRIMMED}"
+        )
+    endforeach()
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
     set_target_properties(
         ${CMAKE_PROJECT_NAME} PROPERTIES LINK_FLAGS
-        "--preload-file ../resources@./Resources"
+        "--preload-file ../resources@./resources"
     )
 endif()
 target_compile_definitions(

@@ -31,8 +31,8 @@ PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Collider* col,
 	this->collider = col;
 	this->material = LoadMaterialDefault();
 	this->SetShader(shader);
-	this->ColLoc = GetShaderLocation(this->shader,"col");
-	this->SetShaderCol({0.0f,1.0f,0.0f,1.0f});
+	this->ColLoc = GetShaderLocation(this->shader, "col");
+	this->SetShaderCol({0.0f, 1.0f, 0.0f, 1.0f});
 }
 
 void PhysObject::Update()
@@ -49,9 +49,15 @@ PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)
 	// TODO: Make rotation work
 	MeshCollider* col = CreateBoxCollider(MatrixScale(dims.x, dims.y, dims.z));
 	Mesh mesh;
+#if defined(PLATFORM_WEB)
+	static const Shader shader =
+		LoadShader(RESOURCES_PATH "shaders/litShader_web.vert",
+				   RESOURCES_PATH "shaders/litShader_web.frag");
+#else
 	static const Shader shader =
 		LoadShader(RESOURCES_PATH "shaders/litShader.vert",
 				   RESOURCES_PATH "shaders/litShader.frag");
+#endif
 
 	const vector<Vector3> verts{
 		{.x = -dims.x / 2, .y = -dims.y / 2, .z = dims.z / 2},
