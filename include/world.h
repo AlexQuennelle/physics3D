@@ -25,9 +25,9 @@ class World
 	vector<PhysObject> objects;
 	Camera cam;
 
-#ifndef NDEBUG
+	// NOTE: Remove when creating physics objects from meshes is properly
+	// implemented.
 	void DebugAddStairObj();
-#endif // !NDEBUG
 };
 void DrawGrid(const float lineLength, const int count);
 

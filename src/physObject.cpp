@@ -1,8 +1,6 @@
 #include "physObject.h"
 #include "collider.h"
 
-#include <cstdint>
-#include <cstring>
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
@@ -59,7 +57,7 @@ PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)
 {
 	// TODO: Make rotation work
 	MeshCollider* col = CreateBoxCollider(MatrixScale(dims.x, dims.y, dims.z));
-	Mesh mesh;
+	Mesh mesh = GenMeshCube(dims.x, dims.y, dims.z);
 #if defined(PLATFORM_WEB)
 	static const Shader shader =
 		LoadShader(RESOURCES_PATH "shaders/litShader_web.vert",
@@ -69,82 +67,6 @@ PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)
 		LoadShader(RESOURCES_PATH "shaders/litShader.vert",
 				   RESOURCES_PATH "shaders/litShader.frag");
 #endif
-
-	const vector<Vector3> verts{
-		{.x = -dims.x / 2, .y = -dims.y / 2, .z = dims.z / 2},
-		{.x = dims.x / 2, .y = -dims.y / 2, .z = dims.z / 2},
-		{.x = dims.x / 2, .y = dims.y / 2, .z = dims.z / 2},
-		{.x = -dims.x / 2, .y = dims.y / 2, .z = dims.z / 2},
-		{.x = -dims.x / 2, .y = -dims.y / 2, .z = -dims.z / 2},
-		{.x = -dims.x / 2, .y = dims.y / 2, .z = -dims.z / 2},
-		{.x = dims.x / 2, .y = dims.y / 2, .z = -dims.z / 2},
-		{.x = dims.x / 2, .y = -dims.y / 2, .z = -dims.z / 2},
-		{.x = -dims.x / 2, .y = dims.y / 2, .z = -dims.z / 2},
-		{.x = -dims.x / 2, .y = dims.y / 2, .z = dims.z / 2},
-		{.x = dims.x / 2, .y = dims.y / 2, .z = dims.z / 2},
-		{.x = dims.x / 2, .y = dims.y / 2, .z = -dims.z / 2},
-		{.x = -dims.x / 2, .y = -dims.y / 2, .z = -dims.z / 2},
-		{.x = dims.x / 2, .y = -dims.y / 2, .z = -dims.z / 2},
-		{.x = dims.x / 2, .y = -dims.y / 2, .z = dims.z / 2},
-		{.x = -dims.x / 2, .y = -dims.y / 2, .z = dims.z / 2},
-		{.x = dims.x / 2, .y = -dims.y / 2, .z = -dims.z / 2},
-		{.x = dims.x / 2, .y = dims.y / 2, .z = -dims.z / 2},
-		{.x = dims.x / 2, .y = dims.y / 2, .z = dims.z / 2},
-		{.x = dims.x / 2, .y = -dims.y / 2, .z = dims.z / 2},
-		{.x = -dims.x / 2, .y = -dims.y / 2, .z = -dims.z / 2},
-		{.x = -dims.x / 2, .y = -dims.y / 2, .z = dims.z / 2},
-		{.x = -dims.x / 2, .y = dims.y / 2, .z = dims.z / 2},
-		{.x = -dims.x / 2, .y = dims.y / 2, .z = -dims.z / 2},
-	};
-	static const vector<float> UVs{
-		0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-		0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-		1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-		0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-	};
-	const vector<Vector3> normals{
-		{.x = 0.0f, .y = 0.0f, .z = 1.0f},	{.x = 0.0f, .y = 0.0f, .z = 1.0f},
-		{.x = 0.0f, .y = 0.0f, .z = 1.0f},	{.x = 0.0f, .y = 0.0f, .z = 1.0f},
-		{.x = 0.0f, .y = 0.0f, .z = -1.0f}, {.x = 0.0f, .y = 0.0f, .z = -1.0f},
-		{.x = 0.0f, .y = 0.0f, .z = -1.0f}, {.x = 0.0f, .y = 0.0f, .z = -1.0f},
-		{.x = 0.0f, .y = 1.0f, .z = 0.0f},	{.x = 0.0f, .y = 1.0f, .z = 0.0f},
-		{.x = 0.0f, .y = 1.0f, .z = 0.0f},	{.x = 0.0f, .y = 1.0f, .z = 0.0f},
-		{.x = 0.0f, .y = -1.0f, .z = 0.0f}, {.x = 0.0f, .y = -1.0f, .z = 0.0f},
-		{.x = 0.0f, .y = -1.0f, .z = 0.0f}, {.x = 0.0f, .y = -1.0f, .z = 0.0f},
-		{.x = 1.0f, .y = 0.0f, .z = 0.0f},	{.x = 1.0f, .y = 0.0f, .z = 0.0f},
-		{.x = 1.0f, .y = 0.0f, .z = 0.0f},	{.x = 1.0f, .y = 0.0f, .z = 0.0f},
-		{.x = -1.0f, .y = 0.0f, .z = 0.0f}, {.x = -1.0f, .y = 0.0f, .z = 0.0f},
-		{.x = -1.0f, .y = 0.0f, .z = 0.0f}, {.x = -1.0f, .y = 0.0f, .z = 0.0f},
-	};
-
-	mesh.vertices =
-		reinterpret_cast<float*>(std::malloc(24 * 3 * sizeof(float)));
-	std::memcpy(mesh.vertices, verts.data(), 24 * 3 * sizeof(float));
-	mesh.texcoords =
-		reinterpret_cast<float*>(std::malloc(24 * 2 * sizeof(float)));
-	std::memcpy(mesh.texcoords, UVs.data(), 24 * 2 * sizeof(float));
-	mesh.normals =
-		reinterpret_cast<float*>(std::malloc(24 * 3 * sizeof(float)));
-	std::memcpy(mesh.normals, normals.data(), 24 * 3 * sizeof(float));
-
-	mesh.indices =
-		reinterpret_cast<uint16_t*>(std::malloc(36 * sizeof(uint16_t)));
-
-	int k__ = 0;
-	for (int i = 0; i < 36; i += 6)
-	{
-		mesh.indices[i] = 4 * k__;
-		mesh.indices[i + 1] = 4 * k__ + 1;
-		mesh.indices[i + 2] = 4 * k__ + 2;
-		mesh.indices[i + 3] = 4 * k__;
-		mesh.indices[i + 4] = 4 * k__ + 2;
-		mesh.indices[i + 5] = 4 * k__ + 3;
-
-		k__++;
-	}
-
-	mesh.vertexCount = 24;
-	mesh.triangleCount = 12;
 
 	return {pos, mesh, col, shader};
 }

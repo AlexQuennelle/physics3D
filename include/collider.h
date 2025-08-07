@@ -60,10 +60,8 @@ class Collider
 		return {.min = 0.0f, .max = 0.0f};
 	}
 
-#ifndef NDEBUG
 	virtual void DebugDraw(const Matrix& /*unused*/,
 						   const Color& /*unused*/) const {};
-#endif // !NDEBUG
 
 	private:
 };
@@ -83,9 +81,7 @@ class CompoundCollider : public Collider
 	/** \copydoc Collider::GetNormals() */
 	[[nodiscard]] vector<Vector3> GetNormals() const override;
 
-#ifndef NDEBUG
 	void DebugDraw(const Matrix& transform, const Color& col) const override;
-#endif // !NDEBUG
 
 	private:
 	vector<Collider*> colliders;
@@ -112,9 +108,7 @@ class MeshCollider : public Collider
 	friend void GetEdgeCrosses(const MeshCollider* col1,
 							   const MeshCollider* col2, vector<Vector3>& out);
 
-#ifndef NDEBUG
 	void DebugDraw(const Matrix& transform, const Color& col) const override;
-#endif // !NDEBUG
 
 	private:
 	vector<Edge> edges;

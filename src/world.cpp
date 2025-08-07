@@ -20,7 +20,7 @@ World::World()
 	std::cout << "Initializing World\n";
 	ClearStyles();
 	using namespace std::numbers;
-	cam = *new Camera(
+	this->cam = Camera(
 		{.position = Vector3RotateByAxisAngle(
 			 Vector3RotateByAxisAngle({10.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f},
 									  pi_v<float> / 12.0f),
@@ -29,9 +29,6 @@ World::World()
 		 .up = {0.0f, 1.0f, 0.0f},
 		 .fovy = 45.0f,
 		 .projection = 0});
-
-	//shaders.push_back(LoadShader(RESOURCES_PATH "shaders/litShader.vert",
-	//							 RESOURCES_PATH "shaders/litShader.frag"));
 
 	this->objects.push_back(
 		CreateBoxObject({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}));
@@ -85,11 +82,11 @@ void World::Update()
 	//BeginDrawing();
 	//ClearBackground({100, 149, 237, 255});
 	//BeginMode3D(cam);
+	DrawGrid(2.5, 2);
 	for (auto obj : this->objects)
 	{
 		obj.Draw();
 	}
-	DrawGrid(2.5, 2);
 	EndMode3D();
 	EndDrawing();
 }
@@ -119,16 +116,19 @@ void World::UpdateCamera()
 				{0.0f, 1.0f, 0.0f}),
 			dAngle);
 	}
+	Vector3 camMove = cam.target - cam.position;
+	camMove = Vector3Scale(camMove, GetMouseWheelMove() * 0.1f);
+	cam.position = Vector3Transform(
+		cam.position, MatrixTranslate(camMove.x, camMove.y, camMove.z));
 }
 
-#ifndef NDEBUG
+// HACK: The following is a hack for testing purposes.
 void World::DebugAddStairObj()
 {
-	// HACK: The following is a hack for testing purposes.
 	Model model = LoadModel(RESOURCES_PATH "stairs.obj");
 
 	Mesh modelMesh = model.meshes[0];
-	Mesh mesh;
+	Mesh mesh{0};
 	mesh.vertexCount = modelMesh.vertexCount;
 	mesh.vertices = reinterpret_cast<float*>(
 		std::malloc(mesh.vertexCount * 3 * sizeof(float)));
@@ -143,12 +143,17 @@ void World::DebugAddStairObj()
 	std::memcpy(mesh.normals, modelMesh.normals,
 				mesh.vertexCount * 3 * sizeof(float));
 	mesh.triangleCount = modelMesh.triangleCount;
-	mesh.indices = reinterpret_cast<uint16_t*>(
-		std::malloc(mesh.triangleCount * 3 * sizeof(uint16_t)));
-	for (uint16_t i{0}; i < mesh.triangleCount * 3; i++)
-	{
-		mesh.indices[i] = i;
-	}
+	mesh.indices = nullptr;
+	//mesh.indices = reinterpret_cast<uint16_t*>(
+	//	std::malloc(mesh.triangleCount * 3 * sizeof(uint16_t)));
+	//std::memcpy(mesh.indices, modelMesh.indices,
+	//			mesh.triangleCount * 3 * sizeof(uint16_t));
+	//std::cout << mesh.vertexCount << ' ';
+	//std::cout << mesh.triangleCount << '\n';
+	//for (uint16_t i{0}; i < (mesh.triangleCount) * 3; i++)
+	//{
+	//	mesh.indices[i] = i;
+	//}
 	UnloadModel(model);
 
 	auto* col = new CompoundCollider({
@@ -159,16 +164,15 @@ void World::DebugAddStairObj()
 	});
 #if defined(PLATFORM_WEB)
 	this->objects.emplace_back(
-		*new PhysObject({0.0f, 0.0f, 1.0f}, mesh, col,
-						RESOURCES_PATH "shaders/litShader_web.vert",
-						RESOURCES_PATH "shaders/litShader_web.frag"));
+		PhysObject({0.0f, 0.0f, 1.25f}, mesh, col,
+				   RESOURCES_PATH "shaders/litShader_web.vert",
+				   RESOURCES_PATH "shaders/litShader_web.frag"));
 #else
-	this->objects.emplace_back(*new PhysObject(
+	this->objects.emplace_back(PhysObject(
 		{0.0f, 0.0f, 1.25f}, mesh, col, RESOURCES_PATH "shaders/litShader.vert",
 		RESOURCES_PATH "shaders/litShader.frag"));
 #endif // defined ()
 }
-#endif // !NDEBUG
 
 void DrawGrid(const float lineLength, const int count)
 {

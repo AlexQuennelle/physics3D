@@ -35,10 +35,12 @@ std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
 			nors.insert(nors.end(), nors2.begin(), nors2.end());
 			GetEdgeCrosses(static_cast<MeshCollider*>(collider1),
 						   static_cast<MeshCollider*>(collider2), nors);
+#ifndef NDEBUG
 			for (auto nor : nors)
 			{
 				DrawLine3D({0.0f, 0.0f, 0.0f}, nor, WHITE);
 			}
+#endif // !NDEBUG
 			bool hit = true;
 			for (const auto nor : nors)
 			{
@@ -74,21 +76,19 @@ std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
 	}
 	if (collision)
 	{
-#ifndef NDEBUG
+		// NOTE: Debug visualization code
 		col1->DebugDraw(trans1, {255, 0, 0, 255});
 		col2->DebugDraw(trans2, {255, 0, 0, 255});
-#endif // !NDEBUG
 		HitObj hitObj{
 			.ThisCol = col1, .OtherCol = col2, .HitPos = {0.0f, 0.0f, 0.0f}};
 		return hitObj;
 	}
-#ifndef NDEBUG
 	else
 	{
+		// NOTE: Debug visualization code
 		col1->DebugDraw(trans1, {0, 255, 0, 255});
 		col2->DebugDraw(trans2, {0, 255, 0, 255});
 	}
-#endif // !NDEBUG
 	return {};
 }
 
@@ -249,7 +249,6 @@ CompoundCollider::CompoundCollider(const vector<Collider*>& cols)
 	this->colliders = cols;
 }
 
-#ifndef NDEBUG
 void CompoundCollider::DebugDraw(const Matrix& transform,
 								 const Color& colour) const
 {
@@ -268,6 +267,7 @@ void MeshCollider::DebugDraw(const Matrix& transform, const Color& col) const
 	}
 }
 
+#ifndef NDEBUG
 ostream& operator<<(ostream& ostr, HitObj hit)
 {
 	ostr << hit.HitPos << '\n';
