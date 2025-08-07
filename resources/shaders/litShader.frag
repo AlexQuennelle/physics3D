@@ -5,8 +5,6 @@ in vec2 fragTexCoord;
 in vec4 fragColor;
 in vec3 fragNormal;
 
-uniform vec4 col;
-
 uniform sampler2D texture0;
 uniform vec4 colDiffuse;
 float ambient = 0.2f;
@@ -18,8 +16,7 @@ void main()
 {
     vec3 dir = normalize(lightPos - fragPosition);
     float diffuse = max(dot(fragNormal, dir), ambient);
-    finalColor = vec4(col.xyz * diffuse, 1.0f);
-    //finalColor = vec4(vec3(0.9f,0.9f,0.9f) * diffuse, 1.0f);
+    finalColor = vec4(vec3(0.9f,0.9f,0.9f) * diffuse, 1.0f);
     //finalColor = vec4(fragColor.xyz * diffuse, 1.0f);
     //finalColor = vec4(1.0f, 1.0f, 1.0f, 10.0f / 255); //overdraw visualization
 }

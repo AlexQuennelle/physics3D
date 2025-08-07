@@ -2,6 +2,7 @@
 
 #include "physObject.h"
 
+#include <raylib.h>
 #include <vector>
 
 namespace phys
@@ -23,6 +24,11 @@ class World
 	float gravity{1.0f};
 	vector<PhysObject> objects;
 	Camera cam;
+
+#ifndef NDEBUG
+	void DebugAddStairObj();
+#endif // !NDEBUG
 };
+void DrawGrid(const float lineLength, const int count);
 
 } //namespace phys

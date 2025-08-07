@@ -33,6 +33,12 @@ std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
 			vector<Vector3> nors = collider1->GetNormals();
 			vector<Vector3> nors2 = collider2->GetNormals();
 			nors.insert(nors.end(), nors2.begin(), nors2.end());
+			GetEdgeCrosses(static_cast<MeshCollider*>(collider1),
+						   static_cast<MeshCollider*>(collider2), nors);
+			for (auto nor : nors)
+			{
+				DrawLine3D({0.0f, 0.0f, 0.0f}, nor, WHITE);
+			}
 			bool hit = true;
 			for (const auto nor : nors)
 			{
@@ -68,18 +74,58 @@ std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
 	}
 	if (collision)
 	{
+#ifndef NDEBUG
+		col1->DebugDraw(trans1, {255, 0, 0, 255});
+		col2->DebugDraw(trans2, {255, 0, 0, 255});
+#endif // !NDEBUG
 		HitObj hitObj{
 			.ThisCol = col1, .OtherCol = col2, .HitPos = {0.0f, 0.0f, 0.0f}};
 		return hitObj;
 	}
+#ifndef NDEBUG
+	else
+	{
+		col1->DebugDraw(trans1, {0, 255, 0, 255});
+		col2->DebugDraw(trans2, {0, 255, 0, 255});
+	}
+#endif // !NDEBUG
 	return {};
 }
 
+void GetEdgeCrosses(const MeshCollider* col1, const MeshCollider* col2,
+					vector<Vector3>& out)
+{
+	vector<Vector3> edges1;
+	vector<Vector3> edges2;
+	edges1.reserve(col1->edges.size());
+	for (auto edge : col1->edges)
+	{
+		edges1.push_back(
+			Vector3Subtract(col1->vertices[edge.a], col1->vertices[edge.b]));
+	}
+	edges2.reserve(col2->edges.size());
+	for (auto edge : col2->edges)
+	{
+		edges2.push_back(
+			Vector3Subtract(col2->vertices[edge.a], col2->vertices[edge.b]));
+	}
+
+	for (auto edge1 : edges1)
+	{
+		for (auto edge2 : edges2)
+		{
+			out.push_back(Vector3CrossProduct(edge1, edge2));
+		}
+	}
+}
+
 MeshCollider::MeshCollider(const vector<Vector3>& verts,
+						   const vector<Edge>& edges,
 						   const vector<Vector3>& nors)
 {
 	this->vertices.insert(this->vertices.end(), verts.begin(), verts.end());
 	this->normals.insert(this->normals.end(), nors.begin(), nors.end());
+	this->edges.insert(this->edges.end(), edges.begin(), edges.end());
 }
 
 vector<Collider*> MeshCollider::GetTransformed(const Matrix trans) const
@@ -104,9 +150,11 @@ vector<Collider*> MeshCollider::GetTransformed(const Matrix trans) const
 	newNors.reserve(this->normals.size());
 	for (auto nor : this->normals)
 	{
-		newNors.push_back(Vector3Normalize(Vector3Transform(nor, trans)));
+		auto newNor = Vector3Transform(nor, trans);
+		newNor = Vector3Subtract(newNor, {trans.m12, trans.m13, trans.m14});
+		newNors.push_back(Vector3Normalize(newNor));
 	}
-	vector<Collider*> cols{new MeshCollider(newVerts, newNors)};
+	vector<Collider*> cols{new MeshCollider(newVerts, this->edges, newNors)};
 	return cols;
 }
 vector<Vector3> MeshCollider::GetNormals() const { return {this->normals}; }
@@ -162,6 +210,11 @@ MeshCollider* CreateBoxCollider(Matrix transform)
 		{.x = 0.5f, .y = 0.5f, .z = 0.5f},
 	};
 	vector<Vector3> newVerts;
+	static const vector<Edge> edges{
+		{.a = 0, .b = 1}, {.a = 0, .b = 2}, {.a = 0, .b = 4}, {.a = 3, .b = 4},
+		{.a = 1, .b = 5}, {.a = 1, .b = 3}, {.a = 2, .b = 6}, {.a = 2, .b = 5},
+		{.a = 3, .b = 7}, {.a = 4, .b = 6}, {.a = 5, .b = 7}, {.a = 6, .b = 7},
+	};
 	static const vector<Vector3> nors{
 		{.x = 1.0f, .y = 0.0f, .z = 0.0f},
 		{.x = 0.0f, .y = 1.0f, .z = 0.0f},
@@ -183,9 +236,12 @@ MeshCollider* CreateBoxCollider(Matrix transform)
 	newNors.reserve(nors.size());
 	for (auto nor : nors)
 	{
-		newNors.push_back(Vector3Normalize(Vector3Transform(nor, transform)));
+		auto newNor = Vector3Transform(nor, transform);
+		newNor = Vector3Subtract(newNor,
+								 {transform.m12, transform.m13, transform.m14});
+		newNors.push_back(Vector3Normalize(newNor));
 	}
-	return new MeshCollider(newVerts, newNors);
+	return new MeshCollider(newVerts, edges, newNors);
 }
 
 CompoundCollider::CompoundCollider(const vector<Collider*>& cols)
@@ -194,6 +250,24 @@ CompoundCollider::CompoundCollider(const vector<Collider*>& cols)
 }
 
 #ifndef NDEBUG
+void CompoundCollider::DebugDraw(const Matrix& transform,
+								 const Color& colour) const
+{
+	for (const auto* col : this->colliders)
+	{
+		col->DebugDraw(transform, colour);
+	}
+}
+void MeshCollider::DebugDraw(const Matrix& transform, const Color& col) const
+{
+	for (const auto& edge : this->edges)
+	{
+		Vector3 start = Vector3Transform(this->vertices[edge.a], transform);
+		Vector3 end = Vector3Transform(this->vertices[edge.b], transform);
+		DrawLine3D(start, end, col);
+	}
+}
+
 ostream& operator<<(ostream& ostr, HitObj hit)
 {
 	ostr << hit.HitPos << '\n';

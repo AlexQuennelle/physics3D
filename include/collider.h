@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <raylib.h>
 #include <vector>
@@ -21,6 +22,11 @@ struct Range
 {
 	float min;
 	float max;
+};
+struct Edge
+{
+	uint32_t a;
+	uint32_t b;
 };
 
 /** Abstract Collider class */
@@ -54,6 +60,11 @@ class Collider
 		return {.min = 0.0f, .max = 0.0f};
 	}
 
+#ifndef NDEBUG
+	virtual void DebugDraw(const Matrix& /*unused*/,
+						   const Color& /*unused*/) const {};
+#endif // !NDEBUG
+
 	private:
 };
 
@@ -72,6 +83,10 @@ class CompoundCollider : public Collider
 	/** \copydoc Collider::GetNormals() */
 	[[nodiscard]] vector<Vector3> GetNormals() const override;
 
+#ifndef NDEBUG
+	void DebugDraw(const Matrix& transform, const Color& col) const override;
+#endif // !NDEBUG
+
 	private:
 	vector<Collider*> colliders;
 };
@@ -80,7 +95,8 @@ class CompoundCollider : public Collider
 class MeshCollider : public Collider
 {
 	public:
-	MeshCollider(const vector<Vector3>& verts, const vector<Vector3>& nors);
+	MeshCollider(const vector<Vector3>& verts, const vector<Edge>& edges,
+				 const vector<Vector3>& nors);
 
 	/** \copydoc Collider::GetTransformed() */
 	[[nodiscard]] vector<Collider*>
@@ -93,20 +109,17 @@ class MeshCollider : public Collider
 	/** Apply a transformation matrix to the Collider. */
 	MeshCollider operator*(const Matrix& mat);
 
+	friend void GetEdgeCrosses(const MeshCollider* col1,
+							   const MeshCollider* col2, vector<Vector3>& out);
+
+#ifndef NDEBUG
+	void DebugDraw(const Matrix& transform, const Color& col) const override;
+#endif // !NDEBUG
+
+	private:
+	vector<Edge> edges;
 	vector<Vector3> vertices;
 	vector<Vector3> normals;
-
-	private:
-};
-
-// TODO: Implement or remove.
-// This Collider type may be more effort than it's worth.
-class SphereCollider : public Collider
-{
-	public:
-	SphereCollider();
-
-	private:
 };
 
 /** Struct representing a collision between colliders. */
@@ -132,9 +145,7 @@ struct HitObj
 std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
 									 const Collider* col2, const Matrix trans2);
 
-/**
- * Creates a rectangular mesh collider centered on (0, 0, 0).
- */
+/** Creates a rectangular mesh collider centered on (0, 0, 0). */
 MeshCollider* CreateBoxCollider(Matrix transform);
 
 #ifndef NDEBUG

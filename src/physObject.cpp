@@ -31,8 +31,19 @@ PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Collider* col,
 	this->collider = col;
 	this->material = LoadMaterialDefault();
 	this->SetShader(shader);
-	this->ColLoc = GetShaderLocation(this->shader, "col");
-	this->SetShaderCol({0.0f, 1.0f, 0.0f, 1.0f});
+}
+PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Collider* col,
+					   const char* vertShader, const char* fragShader)
+{
+	this->position = MatrixTranslate(pos.x, pos.y, pos.z);
+	this->rotation = MatrixRotate({0.0f, 1.0f, 0.0f}, 0.0f);
+	this->scale = MatrixScale(1.0f, 1.0f, 1.0f);
+	this->mesh = mesh;
+	UploadMesh(&this->mesh, false);
+	this->collider = col;
+	this->material = LoadMaterialDefault();
+	this->shader = LoadShader(vertShader, fragShader);
+	this->material.shader = this->shader;
 }
 
 void PhysObject::Update()

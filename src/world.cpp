@@ -22,7 +22,7 @@ World::World()
 	using namespace std::numbers;
 	cam = *new Camera(
 		{.position = Vector3RotateByAxisAngle(
-			 Vector3RotateByAxisAngle({5.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f},
+			 Vector3RotateByAxisAngle({10.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f},
 									  pi_v<float> / 12.0f),
 			 {0.0f, 1.0f, 0.0f}, pi_v<float> * -3.0f / 4.0f),
 		 .target = {0.0f, 0.0f, 0.0f},
@@ -30,48 +30,30 @@ World::World()
 		 .fovy = 45.0f,
 		 .projection = 0});
 
+	//shaders.push_back(LoadShader(RESOURCES_PATH "shaders/litShader.vert",
+	//							 RESOURCES_PATH "shaders/litShader.frag"));
+
 	this->objects.push_back(
 		CreateBoxObject({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}));
-	std::cout << "Add Object\n";
-	// HACK: The following is a hack for testing purposes.
-	// Model model = LoadModel(RESOURCES_PATH "stairs.obj");
-       
-	// Mesh modelMesh = model.meshes[0];
-	// Mesh mesh;
-	// mesh.vertexCount = modelMesh.vertexCount;
-	// mesh.vertices = reinterpret_cast<float*>(
-	// 	std::malloc(mesh.vertexCount * 3 * sizeof(float)));
-	// std::memcpy(mesh.vertices, modelMesh.vertices,
-	// 			mesh.vertexCount * 3 * sizeof(float));
-	// mesh.texcoords = reinterpret_cast<float*>(
-	// 	std::malloc(mesh.vertexCount * 2 * sizeof(float)));
-	// std::memcpy(mesh.texcoords, modelMesh.texcoords,
-	// 			mesh.vertexCount * 2 * sizeof(float));
-	// mesh.normals = reinterpret_cast<float*>(
-	// 	std::malloc(mesh.vertexCount * 3 * sizeof(float)));
-	// std::memcpy(mesh.normals, modelMesh.normals,
-	// 			mesh.vertexCount * 3 * sizeof(float));
-	// mesh.triangleCount = modelMesh.triangleCount;
-	// mesh.indices = reinterpret_cast<uint16_t*>(
-	// 	std::malloc(mesh.triangleCount * 3 * sizeof(uint16_t)));
-	// for (uint16_t i{0}; i < mesh.triangleCount * 3; i++)
-	// {
-	// 	mesh.indices[i] = i;
-	// }
-	// UnloadModel(model);
-       
-	// auto* col = new CompoundCollider({
-	// 	CreateBoxCollider(MatrixScale(1.0f, 1.0f, 0.5f) *
-	// 					  MatrixTranslate(0.0f, 0.0f, 0.25f)),
-	// 	CreateBoxCollider(MatrixScale(1.0f, 0.5f, 0.5f) *
-	// 					  MatrixTranslate(0.0f, -0.25f, -0.25f)),
-	// });
-	// this->objects.emplace_back(*new PhysObject({0.0f, 0.0f, 1.1f}, mesh, col));
+	this->objects[0].Rotate(QuaternionFromEuler(0.0f, 45.0f * DEG2RAD, 0.0f));
+	//this->objects.push_back(
+	//	CreateBoxObject({0.0f, 0.0f, 1.1f}, {1.0f, 1.0f, 1.0f}));
+	this->DebugAddStairObj();
+	this->objects[1].Rotate(QuaternionFromEuler(45.0f * DEG2RAD, 0.0f, 0.0f));
+	SetTextColor(INFO);
+	std::cout << "Done Initializing\n";
+	ClearStyles();
+	//auto discard = CheckCollision(
+	//	this->objects[0].GetCollider(), this->objects[0].GetTransformM(),
+	//	this->objects[1].GetCollider(), this->objects[1].GetTransformM());
 }
 
 void World::Update()
 {
 	this->deltaTime = GetFrameTime();
+	BeginDrawing();
+	ClearBackground({100, 149, 237, 255});
+	BeginMode3D(cam);
 	objects[1].Rotate(
 		QuaternionFromAxisAngle({1.0f, 0.0f, 0.0f}, 1.0f * deltaTime));
 	for (auto obj : this->objects)
@@ -91,37 +73,23 @@ void World::Update()
 							   obj2.GetCollider(), obj2.GetTransformM());
 			if (col.has_value())
 			{
-				obj1.SetShaderCol({1.0f, 0.0f, 0.0f, 1.0f});
-				obj2.SetShaderCol({1.0f, 0.0f, 0.0f, 1.0f});
 			}
 			else
 			{
-				obj1.SetShaderCol({0.0f, 1.0f, 0.0f, 1.0f});
-				obj2.SetShaderCol({0.0f, 1.0f, 0.0f, 1.0f});
 			}
 		}
 	}
 	this->UpdateCamera();
-	BeginDrawing();
-	ClearBackground({100, 149, 237, 255});
-	BeginMode3D(cam);
-	this->objects[0].Draw();
-	//for (auto obj : this->objects)
-	//{
-	//	obj.Draw();
-	//}
-	for (int i{-2}; i < 3; i++)
+
+	// Drawing logic
+	//BeginDrawing();
+	//ClearBackground({100, 149, 237, 255});
+	//BeginMode3D(cam);
+	for (auto obj : this->objects)
 	{
-		DrawLine3D({static_cast<float>(i), 0.0f, -2.5f},
-				   {static_cast<float>(i), 0.0f, 2.5f}, {100, 100, 100, 255});
-		DrawLine3D({-2.5f, 0.0f, static_cast<float>(i)},
-				   {2.5f, 0.0f, static_cast<float>(i)}, {100, 100, 100, 255});
+		obj.Draw();
 	}
-	DrawLine3D({0.0f, 0.0f, 0.0f}, {-2.5f, 0.0f, 0.0f}, {0, 0, 0, 255});
-	DrawLine3D({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -2.5f}, {0, 0, 0, 255});
-	DrawLine3D({0.0f, 0.0f, 0.0f}, {2.5f, 0.0f, 0.0f}, {255, 0, 0, 255});
-	DrawLine3D({0.0f, 0.0f, 0.0f}, {0.0f, 2.5f, 0.0f}, {0, 255, 0, 255});
-	DrawLine3D({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 2.5f}, {0, 0, 255, 255});
+	DrawGrid(2.5, 2);
 	EndMode3D();
 	EndDrawing();
 }
@@ -151,6 +119,73 @@ void World::UpdateCamera()
 				{0.0f, 1.0f, 0.0f}),
 			dAngle);
 	}
+}
+
+#ifndef NDEBUG
+void World::DebugAddStairObj()
+{
+	// HACK: The following is a hack for testing purposes.
+	Model model = LoadModel(RESOURCES_PATH "stairs.obj");
+
+	Mesh modelMesh = model.meshes[0];
+	Mesh mesh;
+	mesh.vertexCount = modelMesh.vertexCount;
+	mesh.vertices = reinterpret_cast<float*>(
+		std::malloc(mesh.vertexCount * 3 * sizeof(float)));
+	std::memcpy(mesh.vertices, modelMesh.vertices,
+				mesh.vertexCount * 3 * sizeof(float));
+	mesh.texcoords = reinterpret_cast<float*>(
+		std::malloc(mesh.vertexCount * 2 * sizeof(float)));
+	std::memcpy(mesh.texcoords, modelMesh.texcoords,
+				mesh.vertexCount * 2 * sizeof(float));
+	mesh.normals = reinterpret_cast<float*>(
+		std::malloc(mesh.vertexCount * 3 * sizeof(float)));
+	std::memcpy(mesh.normals, modelMesh.normals,
+				mesh.vertexCount * 3 * sizeof(float));
+	mesh.triangleCount = modelMesh.triangleCount;
+	mesh.indices = reinterpret_cast<uint16_t*>(
+		std::malloc(mesh.triangleCount * 3 * sizeof(uint16_t)));
+	for (uint16_t i{0}; i < mesh.triangleCount * 3; i++)
+	{
+		mesh.indices[i] = i;
+	}
+	UnloadModel(model);
+
+	auto* col = new CompoundCollider({
+		CreateBoxCollider(MatrixScale(1.0f, 1.0f, 0.5f) *
+						  MatrixTranslate(0.0f, 0.0f, 0.25f)),
+		CreateBoxCollider(MatrixScale(1.0f, 0.5f, 0.5f) *
+						  MatrixTranslate(0.0f, -0.25f, -0.25f)),
+	});
+#if defined(PLATFORM_WEB)
+	this->objects.emplace_back(
+		*new PhysObject({0.0f, 0.0f, 1.0f}, mesh, col,
+						RESOURCES_PATH "shaders/litShader_web.vert",
+						RESOURCES_PATH "shaders/litShader_web.frag"));
+#else
+	this->objects.emplace_back(*new PhysObject(
+		{0.0f, 0.0f, 1.25f}, mesh, col, RESOURCES_PATH "shaders/litShader.vert",
+		RESOURCES_PATH "shaders/litShader.frag"));
+#endif // defined ()
+}
+#endif // !NDEBUG
+
+void DrawGrid(const float lineLength, const int count)
+{
+	for (int i{-count}; i < (count + 1); i++)
+	{
+		DrawLine3D({static_cast<float>(i), 0.0f, -lineLength},
+				   {static_cast<float>(i), 0.0f, lineLength},
+				   {100, 100, 100, 255});
+		DrawLine3D({-lineLength, 0.0f, static_cast<float>(i)},
+				   {lineLength, 0.0f, static_cast<float>(i)},
+				   {100, 100, 100, 255});
+	}
+	DrawLine3D({0.0f, 0.0f, 0.0f}, {-lineLength, 0.0f, 0.0f}, {0, 0, 0, 255});
+	DrawLine3D({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -lineLength}, {0, 0, 0, 255});
+	DrawLine3D({0.0f, 0.0f, 0.0f}, {lineLength, 0.0f, 0.0f}, {255, 0, 0, 255});
+	DrawLine3D({0.0f, 0.0f, 0.0f}, {0.0f, lineLength, 0.0f}, {0, 255, 0, 255});
+	DrawLine3D({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, lineLength}, {0, 0, 255, 255});
 }
 
 } //namespace phys

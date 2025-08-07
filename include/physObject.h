@@ -8,6 +8,8 @@
 namespace phys
 {
 
+extern vector<Shader> shaders;
+
 /**
  * Object that interacts with the physics simulation systems. Has a collider for
  * collision detection and resolution, and a mesh and material for rendering.
@@ -32,6 +34,15 @@ class PhysObject
 	 */
 	PhysObject(const Vector3 pos, const Mesh mesh, Collider* col,
 			   const Shader& shader);
+	/**
+	 * \param pos The initial position of the object in 3D space.
+	 * \param mesh The mesh to render when Draw() is called.
+	 * \param col The Collider to use for physics calculations.
+	 * \param fragShader Path to the shader file to load.
+	 * \param vertShader Path to the shader file to load.
+	 */
+	PhysObject(const Vector3 pos, const Mesh mesh, Collider* col,
+			   const char* vertShader, const char* fragShader);
 
 	void Update();
 	void Draw() const;
@@ -87,12 +98,6 @@ class PhysObject
 	{
 		this->shader = newShader;
 		this->material.shader = this->shader;
-	}
-
-	// NOTE: temporary debug function. Remove later.
-	void SetShaderCol(Vector4 color) const
-	{
-		SetShaderValue(this->shader, this->ColLoc, &color, SHADER_UNIFORM_VEC4);
 	}
 
 	private:
