@@ -14,7 +14,7 @@ int main()
 {
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
 #if defined(PLATFORM_WEB)
-	InitWindow(400, 400, NAME);
+	InitWindow(500, 500, NAME);
 	world = new phys::World();
 	emscripten_set_main_loop(Update, 0, 1);
 #else
@@ -37,5 +37,9 @@ int main()
 
 void Update()
 {
+	//if (IsKeyPressed(KEY_S))
+	//{
+	//	TakeScreenshot("screenshot.png");
+	//}
 	world->Update();
 }

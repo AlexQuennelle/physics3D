@@ -31,12 +31,12 @@ World::World()
 		 .projection = 0});
 
 	this->objects.push_back(
-		CreateBoxObject({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}));
+		CreateBoxObject({0.0f, 0.0f, -0.75f}, {1.0f, 1.0f, 1.0f}));
 	this->objects[0].Rotate(QuaternionFromEuler(0.0f, 45.0f * DEG2RAD, 0.0f));
 	//this->objects.push_back(
 	//	CreateBoxObject({0.0f, 0.0f, 1.1f}, {1.0f, 1.0f, 1.0f}));
 	this->DebugAddStairObj();
-	this->objects[1].Rotate(QuaternionFromEuler(45.0f * DEG2RAD, 0.0f, 0.0f));
+	this->objects[1].Rotate(QuaternionFromEuler(-45.0f * DEG2RAD, 0.0f, 0.0f));
 	SetTextColor(INFO);
 	std::cout << "Done Initializing\n";
 	ClearStyles();
@@ -51,8 +51,8 @@ void World::Update()
 	BeginDrawing();
 	ClearBackground({100, 149, 237, 255});
 	BeginMode3D(cam);
-	objects[1].Rotate(
-		QuaternionFromAxisAngle({1.0f, 0.0f, 0.0f}, 1.0f * deltaTime));
+	//objects[1].Rotate(
+	//	QuaternionFromAxisAngle({1.0f, 0.0f, 0.0f}, 1.0f * deltaTime));
 	for (auto obj : this->objects)
 	{
 		obj.Update();
@@ -144,16 +144,6 @@ void World::DebugAddStairObj()
 				mesh.vertexCount * 3 * sizeof(float));
 	mesh.triangleCount = modelMesh.triangleCount;
 	mesh.indices = nullptr;
-	//mesh.indices = reinterpret_cast<uint16_t*>(
-	//	std::malloc(mesh.triangleCount * 3 * sizeof(uint16_t)));
-	//std::memcpy(mesh.indices, modelMesh.indices,
-	//			mesh.triangleCount * 3 * sizeof(uint16_t));
-	//std::cout << mesh.vertexCount << ' ';
-	//std::cout << mesh.triangleCount << '\n';
-	//for (uint16_t i{0}; i < (mesh.triangleCount) * 3; i++)
-	//{
-	//	mesh.indices[i] = i;
-	//}
 	UnloadModel(model);
 
 	auto* col = new CompoundCollider({
@@ -169,7 +159,7 @@ void World::DebugAddStairObj()
 				   RESOURCES_PATH "shaders/litShader_web.frag"));
 #else
 	this->objects.emplace_back(PhysObject(
-		{0.0f, 0.0f, 1.25f}, mesh, col, RESOURCES_PATH "shaders/litShader.vert",
+		{0.0f, 0.0f, 0.5f}, mesh, col, RESOURCES_PATH "shaders/litShader.vert",
 		RESOURCES_PATH "shaders/litShader.frag"));
 #endif // defined ()
 }

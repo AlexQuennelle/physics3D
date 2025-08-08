@@ -1,6 +1,5 @@
 #include "collider.h"
 
-#include <iostream>
 #include <limits>
 #include <optional>
 #include <raylib.h>
@@ -8,8 +7,11 @@
 #include <vector>
 #ifndef NDEBUG
 //#define VERBOSELOG_COL
-#include "utils.h"
+#include <iostream>
 #include <ostream>
+#ifdef VERBOSELOG_COL
+#include "utils.h"
+#endif // VERBOSELOG_COL
 #endif // !NDEBUG
 
 namespace phys
