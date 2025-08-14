@@ -2,6 +2,7 @@
 
 #include "physObject.h"
 
+#include <imgui.h>
 #include <raylib.h>
 #include <vector>
 
@@ -18,12 +19,14 @@ class World
 	void Update();
 
 	private:
-	void UpdateCamera();
+	void ProcessInput();
 
 	float deltaTime;
 	float gravity{1.0f};
 	vector<PhysObject> objects;
 	Camera cam;
+
+	ImGuiIO& imguiIO;
 
 	// NOTE: Remove when creating physics objects from meshes is properly
 	// implemented.

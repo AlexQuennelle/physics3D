@@ -7,14 +7,16 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <imgui.h>
 #include <iostream>
 #include <numbers>
 #include <raylib.h>
 #include <raymath.h>
+#include <rlImGui.h>
 
 namespace phys
 {
-World::World()
+World::World() : imguiIO(ImGui::GetIO())
 {
 	SetTextColor(INFO);
 	std::cout << "Initializing World\n";
@@ -43,12 +45,16 @@ World::World()
 	//auto discard = CheckCollision(
 	//	this->objects[0].GetCollider(), this->objects[0].GetTransformM(),
 	//	this->objects[1].GetCollider(), this->objects[1].GetTransformM());
+
+	imguiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 }
 
 void World::Update()
 {
 	this->deltaTime = GetFrameTime();
 	BeginDrawing();
+	rlImGuiBegin();
+
 	ClearBackground({100, 149, 237, 255});
 	BeginMode3D(cam);
 	//objects[1].Rotate(
@@ -76,7 +82,7 @@ void World::Update()
 			}
 		}
 	}
-	this->UpdateCamera();
+	this->ProcessInput();
 
 	// Drawing logic
 	//BeginDrawing();
@@ -88,38 +94,51 @@ void World::Update()
 		obj.Draw();
 	}
 	EndMode3D();
+
+	bool open = true;
+	if (ImGui::Begin("Test Window", &open))
+	{
+		ImGui::TextUnformatted("This is a test window");
+	}
+	ImGui::End();
+
+	rlImGuiEnd();
 	EndDrawing();
 }
-void World::UpdateCamera()
+void World::ProcessInput()
 {
-	if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+	if (!imguiIO.WantCaptureMouse)
 	{
-		Vector2 mouseDelta{GetMouseDelta()};
+		if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+		{
+			Vector2 mouseDelta{GetMouseDelta()};
 
-		cam.position = Vector3RotateByAxisAngle(
-			cam.position, {0.0f, 1.0f, 0.0f}, -mouseDelta.x * 0.8f * deltaTime);
-		float dAngle = -mouseDelta.y * 0.4f * deltaTime;
-		float currentAngle =
-			Vector3Angle(Vector3Normalize(cam.position), {0.0f, 1.0f, 0.0f});
-		if (currentAngle + dAngle > 175.0f * DEG2RAD)
-		{
-			dAngle -= (currentAngle + dAngle) - (175.0f * DEG2RAD);
+			cam.position =
+				Vector3RotateByAxisAngle(cam.position, {0.0f, 1.0f, 0.0f},
+										 -mouseDelta.x * 0.8f * deltaTime);
+			float dAngle = -mouseDelta.y * 0.4f * deltaTime;
+			float currentAngle = Vector3Angle(Vector3Normalize(cam.position),
+											  {0.0f, 1.0f, 0.0f});
+			if (currentAngle + dAngle > 175.0f * DEG2RAD)
+			{
+				dAngle -= (currentAngle + dAngle) - (175.0f * DEG2RAD);
+			}
+			else if (currentAngle + dAngle < 5.0f * DEG2RAD)
+			{
+				dAngle += (5.0f * DEG2RAD) - (currentAngle + dAngle);
+			}
+			cam.position = Vector3RotateByAxisAngle(
+				cam.position,
+				Vector3CrossProduct(
+					Vector3Subtract({0.0f, 0.0f, 0.0f}, cam.position),
+					{0.0f, 1.0f, 0.0f}),
+				dAngle);
 		}
-		else if (currentAngle + dAngle < 5.0f * DEG2RAD)
-		{
-			dAngle += (5.0f * DEG2RAD) - (currentAngle + dAngle);
-		}
-		cam.position = Vector3RotateByAxisAngle(
-			cam.position,
-			Vector3CrossProduct(
-				Vector3Subtract({0.0f, 0.0f, 0.0f}, cam.position),
-				{0.0f, 1.0f, 0.0f}),
-			dAngle);
+		Vector3 camMove = cam.target - cam.position;
+		camMove = Vector3Scale(camMove, GetMouseWheelMove() * 0.1f);
+		cam.position = Vector3Transform(
+			cam.position, MatrixTranslate(camMove.x, camMove.y, camMove.z));
 	}
-	Vector3 camMove = cam.target - cam.position;
-	camMove = Vector3Scale(camMove, GetMouseWheelMove() * 0.1f);
-	cam.position = Vector3Transform(
-		cam.position, MatrixTranslate(camMove.x, camMove.y, camMove.z));
 }
 
 // HACK: The following is a hack for testing purposes.
@@ -154,7 +173,7 @@ void World::DebugAddStairObj()
 	});
 #if defined(PLATFORM_WEB)
 	this->objects.emplace_back(
-		PhysObject({0.0f, 0.0f, 1.25f}, mesh, col,
+		PhysObject({0.0f, 0.0f, 0.5f}, mesh, col,
 				   RESOURCES_PATH "shaders/litShader_web.vert",
 				   RESOURCES_PATH "shaders/litShader_web.frag"));
 #else
