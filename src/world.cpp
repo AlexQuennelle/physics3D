@@ -176,7 +176,7 @@ void World::DebugAddStairObj()
 	}));
 #if defined(PLATFORM_WEB)
 	this->objects.emplace_back(PhysObject(
-		{0.0f, 0.0f, 0.5f}, mesh, std::dynamic_pointer_cast<Collider>(co),
+		{0.0f, 0.0f, 0.5f}, mesh, std::dynamic_pointer_cast<Collider>(col),
 		RESOURCES_PATH "shaders/litShader_web.vert",
 		RESOURCES_PATH "shaders/litShader_web.frag"));
 #else
