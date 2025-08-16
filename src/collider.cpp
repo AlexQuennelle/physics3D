@@ -1,6 +1,7 @@
 #include "collider.h"
 
 #include <limits>
+#include <memory>
 #include <optional>
 #include <raylib.h>
 #include <raymath.h>
@@ -22,11 +23,11 @@ using std::vector;
 using std::ostream;
 #endif
 
-std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
-									 const Collider* col2, const Matrix trans2)
+std::optional<HitObj> CheckCollision(const Col_Sptr col1, const Matrix trans1,
+									 const Col_Sptr col2, const Matrix trans2)
 {
-	vector<Collider*> cols1 = col1->GetTransformed(trans1);
-	vector<Collider*> cols2 = col2->GetTransformed(trans2);
+	vector<Col_Sptr> cols1 = col1->GetTransformed(trans1);
+	vector<Col_Sptr> cols2 = col2->GetTransformed(trans2);
 	bool collision = false;
 	for (const auto& collider1 : cols1)
 	{
@@ -35,8 +36,9 @@ std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
 			vector<Vector3> nors = collider1->GetNormals();
 			vector<Vector3> nors2 = collider2->GetNormals();
 			nors.insert(nors.end(), nors2.begin(), nors2.end());
-			GetEdgeCrosses(static_cast<MeshCollider*>(collider1),
-						   static_cast<MeshCollider*>(collider2), nors);
+			GetEdgeCrosses(std::dynamic_pointer_cast<MeshCollider>(collider1),
+						   std::dynamic_pointer_cast<MeshCollider>(collider2),
+						   nors);
 #ifndef NDEBUG
 			for (auto nor : nors)
 			{
@@ -94,7 +96,8 @@ std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
 	return {};
 }
 
-void GetEdgeCrosses(const MeshCollider* col1, const MeshCollider* col2,
+void GetEdgeCrosses(const std::shared_ptr<MeshCollider> col1,
+					const std::shared_ptr<MeshCollider> col2,
 					vector<Vector3>& out)
 {
 	vector<Vector3> edges1;
@@ -130,7 +133,7 @@ MeshCollider::MeshCollider(const vector<Vector3>& verts,
 	this->edges.insert(this->edges.end(), edges.begin(), edges.end());
 }
 
-vector<Collider*> MeshCollider::GetTransformed(const Matrix trans) const
+vector<Col_Sptr> MeshCollider::GetTransformed(const Matrix trans) const
 {
 #ifdef VERBOSELOG_COL
 	std::cout << trans << '\n';
@@ -156,7 +159,9 @@ vector<Collider*> MeshCollider::GetTransformed(const Matrix trans) const
 		newNor = Vector3Subtract(newNor, {trans.m12, trans.m13, trans.m14});
 		newNors.push_back(Vector3Normalize(newNor));
 	}
-	vector<Collider*> cols{new MeshCollider(newVerts, this->edges, newNors)};
+	//vector<Col_Sptr> cols{new MeshCollider(newVerts, this->edges, newNors)};
+	vector<Col_Sptr> cols{
+		Col_Sptr(new MeshCollider(newVerts, this->edges, newNors))};
 	return cols;
 }
 vector<Vector3> MeshCollider::GetNormals() const { return {this->normals}; }
@@ -175,12 +180,12 @@ Range MeshCollider::GetProjection(const Vector3 nor) const
 	return proj;
 }
 
-vector<Collider*> CompoundCollider::GetTransformed(const Matrix trans) const
+vector<Col_Sptr> CompoundCollider::GetTransformed(const Matrix trans) const
 {
-	vector<Collider*> cols;
+	vector<Col_Sptr> cols;
 	for (const auto& elem : this->colliders)
 	{
-		vector<Collider*> transformed = elem->GetTransformed(trans);
+		vector<Col_Sptr> transformed = elem->GetTransformed(trans);
 		cols.insert(cols.end(), transformed.begin(), transformed.end());
 	}
 	return cols;
@@ -196,7 +201,7 @@ vector<Vector3> CompoundCollider::GetNormals() const
 	return nors;
 }
 
-MeshCollider* CreateBoxCollider(Matrix transform)
+std::shared_ptr<MeshCollider> CreateBoxCollider(Matrix transform)
 {
 #ifdef VERBOSELOG_COL
 	std::cout << transform << '\n';
@@ -243,10 +248,10 @@ MeshCollider* CreateBoxCollider(Matrix transform)
 								 {transform.m12, transform.m13, transform.m14});
 		newNors.push_back(Vector3Normalize(newNor));
 	}
-	return new MeshCollider(newVerts, edges, newNors);
+	return std::make_shared<MeshCollider>(newVerts, edges, newNors);
 }
 
-CompoundCollider::CompoundCollider(const vector<Collider*>& cols)
+CompoundCollider::CompoundCollider(const vector<Col_Sptr>& cols)
 {
 	this->colliders = cols;
 }
@@ -254,7 +259,7 @@ CompoundCollider::CompoundCollider(const vector<Collider*>& cols)
 void CompoundCollider::DebugDraw(const Matrix& transform,
 								 const Color& colour) const
 {
-	for (const auto* col : this->colliders)
+	for (const auto& col : this->colliders)
 	{
 		col->DebugDraw(transform, colour);
 	}
@@ -270,7 +275,7 @@ void MeshCollider::DebugDraw(const Matrix& transform, const Color& col) const
 }
 
 #ifndef NDEBUG
-ostream& operator<<(ostream& ostr, HitObj hit)
+ostream& operator<<(ostream& ostr, HitObj& hit)
 {
 	ostr << hit.HitPos << '\n';
 	return ostr;

@@ -9,6 +9,7 @@
 #include <cstring>
 #include <imgui.h>
 #include <iostream>
+#include <memory>
 #include <numbers>
 #include <raylib.h>
 #include <raymath.h>
@@ -89,7 +90,7 @@ void World::Update()
 	//ClearBackground({100, 149, 237, 255});
 	//BeginMode3D(cam);
 	DrawGrid(2.5, 2);
-	for (auto obj : this->objects)
+	for (const auto& obj : this->objects)
 	{
 		obj.Draw();
 	}
@@ -165,20 +166,23 @@ void World::DebugAddStairObj()
 	mesh.indices = nullptr;
 	UnloadModel(model);
 
-	auto* col = new CompoundCollider({
-		CreateBoxCollider(MatrixScale(1.0f, 1.0f, 0.5f) *
-						  MatrixTranslate(0.0f, 0.0f, 0.25f)),
-		CreateBoxCollider(MatrixScale(1.0f, 0.5f, 0.5f) *
-						  MatrixTranslate(0.0f, -0.25f, -0.25f)),
-	});
+	auto col = std::make_shared<CompoundCollider>(CompoundCollider({
+		std::dynamic_pointer_cast<Collider>(
+			CreateBoxCollider(MatrixScale(1.0f, 1.0f, 0.5f) *
+							  MatrixTranslate(0.0f, 0.0f, 0.25f))),
+		std::dynamic_pointer_cast<Collider>(
+			CreateBoxCollider(MatrixScale(1.0f, 0.5f, 0.5f) *
+							  MatrixTranslate(0.0f, -0.25f, -0.25f))),
+	}));
 #if defined(PLATFORM_WEB)
-	this->objects.emplace_back(
-		PhysObject({0.0f, 0.0f, 0.5f}, mesh, col,
-				   RESOURCES_PATH "shaders/litShader_web.vert",
-				   RESOURCES_PATH "shaders/litShader_web.frag"));
+	this->objects.emplace_back(PhysObject(
+		{0.0f, 0.0f, 0.5f}, mesh, std::dynamic_pointer_cast<Collider>(co),
+		RESOURCES_PATH "shaders/litShader_web.vert",
+		RESOURCES_PATH "shaders/litShader_web.frag"));
 #else
 	this->objects.emplace_back(PhysObject(
-		{0.0f, 0.0f, 0.5f}, mesh, col, RESOURCES_PATH "shaders/litShader.vert",
+		{0.0f, 0.0f, 0.5f}, mesh, std::dynamic_pointer_cast<Collider>(col),
+		RESOURCES_PATH "shaders/litShader.vert",
 		RESOURCES_PATH "shaders/litShader.frag"));
 #endif // defined ()
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <raylib.h>
 #include <vector>
@@ -15,6 +16,9 @@ using std::vector;
 #ifndef NDEBUG
 using std::ostream;
 #endif
+
+class Collider;
+using Col_Sptr = std::shared_ptr<Collider>;
 
 struct HitObj;
 /** Type representing a range of float values between a min and a max value. */
@@ -41,8 +45,8 @@ class Collider
 	 * \returns A vector of Colliders transformed by the supplied matrix. The
 	 * Vector may contain multiple Colliders.
 	 */
-	[[nodiscard]] virtual vector<Collider*>
-	GetTransformed(const Matrix /*trans*/) const
+	[[nodiscard]] virtual vector<Col_Sptr>
+	GetTransformed(const Matrix /*unused*/) const
 	{
 		return {};
 	}
@@ -73,10 +77,10 @@ class Collider
 class CompoundCollider : public Collider
 {
 	public:
-	CompoundCollider(const vector<Collider*>& cols);
+	CompoundCollider(const vector<Col_Sptr>& cols);
 
 	/** \copydoc Collider::GetTransformed() */
-	[[nodiscard]] vector<Collider*>
+	[[nodiscard]] vector<Col_Sptr>
 	GetTransformed(const Matrix trans) const override;
 	/** \copydoc Collider::GetNormals() */
 	[[nodiscard]] vector<Vector3> GetNormals() const override;
@@ -84,7 +88,7 @@ class CompoundCollider : public Collider
 	void DebugDraw(const Matrix& transform, const Color& col) const override;
 
 	private:
-	vector<Collider*> colliders;
+	vector<Col_Sptr> colliders;
 };
 
 /** Polygonal Mesh collider */
@@ -95,7 +99,7 @@ class MeshCollider : public Collider
 				 const vector<Vector3>& nors);
 
 	/** \copydoc Collider::GetTransformed() */
-	[[nodiscard]] vector<Collider*>
+	[[nodiscard]] vector<Col_Sptr>
 	GetTransformed(const Matrix trans) const override;
 	/** \copydoc Collider::GetNormals() */
 	[[nodiscard]] vector<Vector3> GetNormals() const override;
@@ -105,8 +109,9 @@ class MeshCollider : public Collider
 	/** Apply a transformation matrix to the Collider. */
 	MeshCollider operator*(const Matrix& mat);
 
-	friend void GetEdgeCrosses(const MeshCollider* col1,
-							   const MeshCollider* col2, vector<Vector3>& out);
+	friend void GetEdgeCrosses(const std::shared_ptr<MeshCollider> col1,
+							   const std::shared_ptr<MeshCollider> col2,
+							   vector<Vector3>& out);
 
 	void DebugDraw(const Matrix& transform, const Color& col) const override;
 
@@ -120,8 +125,8 @@ class MeshCollider : public Collider
 struct HitObj
 {
 	public:
-	const Collider* ThisCol;
-	const Collider* OtherCol;
+	const std::weak_ptr<Collider> ThisCol;
+	const std::weak_ptr<Collider> OtherCol;
 	Vector3 HitPos{0.0f, 0.0f, 0.0f};
 };
 
@@ -136,11 +141,11 @@ struct HitObj
  * \returns A Hit Object struct if the colliders overlap, otheriwse returns
  * nothing.
  */
-std::optional<HitObj> CheckCollision(const Collider* col1, const Matrix trans1,
-									 const Collider* col2, const Matrix trans2);
+std::optional<HitObj> CheckCollision(const Col_Sptr col1, const Matrix trans1,
+									 const Col_Sptr col2, const Matrix trans2);
 
 /** Creates a rectangular mesh collider centered on (0, 0, 0). */
-MeshCollider* CreateBoxCollider(Matrix transform);
+std::shared_ptr<MeshCollider> CreateBoxCollider(Matrix transform);
 
 #ifndef NDEBUG
 ostream& operator<<(ostream& ostr, HitObj hit);
