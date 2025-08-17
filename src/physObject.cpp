@@ -9,7 +9,7 @@
 namespace phys
 {
 
-PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Col_Sptr col)
+PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Col_Uptr col)
 {
 	this->position = MatrixTranslate(pos.x, pos.y, pos.z);
 	this->rotation = MatrixRotate({0.0f, 1.0f, 0.0f}, 0.0f);
@@ -19,7 +19,7 @@ PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Col_Sptr col)
 	this->collider = std::move(col);
 	this->material = LoadMaterialDefault();
 }
-PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Col_Sptr col,
+PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Col_Uptr col,
 					   const Shader& shader)
 {
 	this->position = MatrixTranslate(pos.x, pos.y, pos.z);
@@ -31,7 +31,7 @@ PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Col_Sptr col,
 	this->material = LoadMaterialDefault();
 	this->SetShader(shader);
 }
-PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Col_Sptr col,
+PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Col_Uptr col,
 					   const char* vertShader, const char* fragShader)
 {
 	this->position = MatrixTranslate(pos.x, pos.y, pos.z);
@@ -57,7 +57,7 @@ void PhysObject::Draw() const
 PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)
 {
 	// TODO: Make rotation work
-	std::shared_ptr<MeshCollider> col =
+	Col_Uptr col =
 		CreateBoxCollider(MatrixScale(dims.x, dims.y, dims.z));
 	Mesh mesh = GenMeshCube(dims.x, dims.y, dims.z);
 #if defined(PLATFORM_WEB)
@@ -70,7 +70,7 @@ PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)
 				   RESOURCES_PATH "shaders/litShader.frag");
 #endif
 
-	return {pos, mesh, col, shader};
+	return {pos, mesh, std::move(col), shader};
 }
 
 } //namespace phys

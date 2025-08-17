@@ -1,5 +1,7 @@
 #include "collider.h"
+#include "physObject.h"
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -23,11 +25,15 @@ using std::vector;
 using std::ostream;
 #endif
 
-std::optional<HitObj> CheckCollision(const Col_Sptr col1, const Matrix trans1,
-									 const Col_Sptr col2, const Matrix trans2)
+std::optional<HitObj> CheckCollision(const PhysObject& obj1,
+									 const PhysObject& obj2)
 {
-	vector<Col_Sptr> cols1 = col1->GetTransformed(trans1);
-	vector<Col_Sptr> cols2 = col2->GetTransformed(trans2);
+	const Collider& col1 = obj1.GetCollider();
+	const Matrix& trans1 = obj1.GetTransformM();
+	const Collider& col2 = obj2.GetCollider();
+	const Matrix& trans2 = obj2.GetTransformM();
+	vector<Col_Uptr> cols1 = col1.GetTransformed(trans1);
+	vector<Col_Uptr> cols2 = col2.GetTransformed(trans2);
 	bool collision = false;
 	for (const auto& collider1 : cols1)
 	{
@@ -36,9 +42,8 @@ std::optional<HitObj> CheckCollision(const Col_Sptr col1, const Matrix trans1,
 			vector<Vector3> nors = collider1->GetNormals();
 			vector<Vector3> nors2 = collider2->GetNormals();
 			nors.insert(nors.end(), nors2.begin(), nors2.end());
-			GetEdgeCrosses(std::dynamic_pointer_cast<MeshCollider>(collider1),
-						   std::dynamic_pointer_cast<MeshCollider>(collider2),
-						   nors);
+			GetEdgeCrosses(*dynamic_cast<MeshCollider*>(collider1.get()),
+						   *dynamic_cast<MeshCollider*>(collider2.get()), nors);
 #ifndef NDEBUG
 			for (auto nor : nors)
 			{
@@ -81,38 +86,43 @@ std::optional<HitObj> CheckCollision(const Col_Sptr col1, const Matrix trans1,
 	if (collision)
 	{
 		// NOTE: Debug visualization code
-		col1->DebugDraw(trans1, {255, 0, 0, 255});
-		col2->DebugDraw(trans2, {255, 0, 0, 255});
+		col1.DebugDraw(trans1, {255, 0, 0, 255});
+		col2.DebugDraw(trans2, {255, 0, 0, 255});
 		HitObj hitObj{
-			.ThisCol = col1, .OtherCol = col2, .HitPos = {0.0f, 0.0f, 0.0f}};
+			//.ThisCol = col1, .OtherCol = col2, .HitPos = {0.0f, 0.0f, 0.0f}};
+			{0.0f, 0.0f, 0.0f}};
 		return hitObj;
 	}
 	else
 	{
 		// NOTE: Debug visualization code
-		col1->DebugDraw(trans1, {0, 255, 0, 255});
-		col2->DebugDraw(trans2, {0, 255, 0, 255});
+		col1.DebugDraw(trans1, {0, 255, 0, 255});
+		col2.DebugDraw(trans2, {0, 255, 0, 255});
 	}
 	return {};
 }
 
-void GetEdgeCrosses(const std::shared_ptr<MeshCollider> col1,
-					const std::shared_ptr<MeshCollider> col2,
+std::optional<HitObj> CheckRaycast(const Raycast ray, const Col_Uptr col)
+{
+	return {};
+}
+
+void GetEdgeCrosses(const MeshCollider& col1, const MeshCollider& col2,
 					vector<Vector3>& out)
 {
 	vector<Vector3> edges1;
 	vector<Vector3> edges2;
-	edges1.reserve(col1->edges.size());
-	for (auto edge : col1->edges)
+	edges1.reserve(col1.edges.size());
+	for (auto edge : col1.edges)
 	{
 		edges1.push_back(
-			Vector3Subtract(col1->vertices[edge.a], col1->vertices[edge.b]));
+			Vector3Subtract(col1.vertices[edge.a], col1.vertices[edge.b]));
 	}
-	edges2.reserve(col2->edges.size());
-	for (auto edge : col2->edges)
+	edges2.reserve(col2.edges.size());
+	for (auto edge : col2.edges)
 	{
 		edges2.push_back(
-			Vector3Subtract(col2->vertices[edge.a], col2->vertices[edge.b]));
+			Vector3Subtract(col2.vertices[edge.a], col2.vertices[edge.b]));
 	}
 
 	for (auto edge1 : edges1)
@@ -133,7 +143,7 @@ MeshCollider::MeshCollider(const vector<Vector3>& verts,
 	this->edges.insert(this->edges.end(), edges.begin(), edges.end());
 }
 
-vector<Col_Sptr> MeshCollider::GetTransformed(const Matrix trans) const
+vector<Col_Uptr> MeshCollider::GetTransformed(const Matrix trans) const
 {
 #ifdef VERBOSELOG_COL
 	std::cout << trans << '\n';
@@ -159,9 +169,9 @@ vector<Col_Sptr> MeshCollider::GetTransformed(const Matrix trans) const
 		newNor = Vector3Subtract(newNor, {trans.m12, trans.m13, trans.m14});
 		newNors.push_back(Vector3Normalize(newNor));
 	}
-	//vector<Col_Sptr> cols{new MeshCollider(newVerts, this->edges, newNors)};
-	vector<Col_Sptr> cols{
-		Col_Sptr(new MeshCollider(newVerts, this->edges, newNors))};
+	vector<Col_Uptr> cols{};
+	cols.push_back(
+		std::make_unique<MeshCollider>(newVerts, this->edges, newNors));
 	return cols;
 }
 vector<Vector3> MeshCollider::GetNormals() const { return {this->normals}; }
@@ -180,13 +190,14 @@ Range MeshCollider::GetProjection(const Vector3 nor) const
 	return proj;
 }
 
-vector<Col_Sptr> CompoundCollider::GetTransformed(const Matrix trans) const
+vector<Col_Uptr> CompoundCollider::GetTransformed(const Matrix trans) const
 {
-	vector<Col_Sptr> cols;
+	vector<Col_Uptr> cols;
 	for (const auto& elem : this->colliders)
 	{
-		vector<Col_Sptr> transformed = elem->GetTransformed(trans);
-		cols.insert(cols.end(), transformed.begin(), transformed.end());
+		vector<Col_Uptr> transformed = elem->GetTransformed(trans);
+		//cols.insert(cols.end(), transformed.begin(), transformed.end());
+		std::ranges::move(transformed, std::back_inserter(cols));
 	}
 	return cols;
 }
@@ -201,7 +212,7 @@ vector<Vector3> CompoundCollider::GetNormals() const
 	return nors;
 }
 
-std::shared_ptr<MeshCollider> CreateBoxCollider(Matrix transform)
+std::unique_ptr<Collider> CreateBoxCollider(Matrix transform)
 {
 #ifdef VERBOSELOG_COL
 	std::cout << transform << '\n';
@@ -248,12 +259,12 @@ std::shared_ptr<MeshCollider> CreateBoxCollider(Matrix transform)
 								 {transform.m12, transform.m13, transform.m14});
 		newNors.push_back(Vector3Normalize(newNor));
 	}
-	return std::make_shared<MeshCollider>(newVerts, edges, newNors);
+	return std::make_unique<MeshCollider>(newVerts, edges, newNors);
 }
 
-CompoundCollider::CompoundCollider(const vector<Col_Sptr>& cols)
+CompoundCollider::CompoundCollider(vector<Col_Uptr>&& cols)
 {
-	this->colliders = cols;
+	this->colliders = std::move(cols);
 }
 
 void CompoundCollider::DebugDraw(const Matrix& transform,

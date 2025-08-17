@@ -25,14 +25,14 @@ class PhysObject
 	 * \param mesh The mesh to render when Draw() is called.
 	 * \param col The Collider to use for physics calculations.
 	 */
-	PhysObject(const Vector3 pos, const Mesh mesh, Col_Sptr col);
+	PhysObject(const Vector3 pos, const Mesh mesh, Col_Uptr col);
 	/**
 	 * \param pos The initial position of the object in 3D space.
 	 * \param mesh The mesh to render when Draw() is called.
 	 * \param col The Collider to use for physics calculations.
 	 * \param shader A shader to apply when rendering the mesh.
 	 */
-	PhysObject(const Vector3 pos, const Mesh mesh, Col_Sptr col,
+	PhysObject(const Vector3 pos, const Mesh mesh, Col_Uptr col,
 			   const Shader& shader);
 	/**
 	 * \param pos The initial position of the object in 3D space.
@@ -41,7 +41,7 @@ class PhysObject
 	 * \param fragShader Path to the shader file to load.
 	 * \param vertShader Path to the shader file to load.
 	 */
-	PhysObject(const Vector3 pos, const Mesh mesh, Col_Sptr col,
+	PhysObject(const Vector3 pos, const Mesh mesh, Col_Uptr col,
 			   const char* vertShader, const char* fragShader);
 
 	void Update();
@@ -92,7 +92,10 @@ class PhysObject
 	}
 
 	/** \returns A pointer to the object's physics Collider. */
-	[[nodiscard]] Col_Sptr GetCollider() const { return this->collider; }
+	[[nodiscard]] const Collider& GetCollider() const
+	{
+		return *this->collider;
+	}
 	/** Sets the shader to use when drawing the object. */
 	void SetShader(const Shader& newShader)
 	{
@@ -110,7 +113,7 @@ class PhysObject
 	Material material;
 	Shader shader;
 
-	Col_Sptr collider;
+	Col_Uptr collider;
 	Mesh mesh;
 
 	//debug stuff
