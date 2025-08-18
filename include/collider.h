@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <optional>
 #include <raylib.h>
 #include <vector>
 #ifndef NDEBUG
@@ -54,7 +53,7 @@ class Collider
 	 * Gets the relevant normals for doing the Separating Axis Theorem to check
 	 * collisions and overlap.
 	 */
-	[[nodiscard]] virtual vector<Vector3> GetNormals() const { return {}; }
+	virtual void GetNormals(vector<Vector3>& /*unused*/) const = 0;
 	/**
 	 * Projects a collider along a normal axis and returns a Range representing
 	 * the 'shadow' covered.
@@ -83,7 +82,7 @@ class CompoundCollider : public Collider
 	[[nodiscard]] vector<Col_Sptr>
 	GetTransformed(const Matrix trans) const override;
 	/** \copydoc Collider::GetNormals() */
-	[[nodiscard]] vector<Vector3> GetNormals() const override;
+	void GetNormals(vector<Vector3>& out) const override;
 
 	void DebugDraw(const Matrix& transform, const Color& col) const override;
 
@@ -91,26 +90,26 @@ class CompoundCollider : public Collider
 	vector<Col_Sptr> colliders;
 };
 
-/** Polygonal Mesh collider */
-class MeshCollider : public Collider
+/** Convex Hull collider */
+class HullCollider : public Collider
 {
 	public:
-	MeshCollider(const vector<Vector3>& verts, const vector<Edge>& edges,
+	HullCollider(const vector<Vector3>& verts, const vector<Edge>& edges,
 				 const vector<Vector3>& nors);
 
 	/** \copydoc Collider::GetTransformed() */
 	[[nodiscard]] vector<Col_Sptr>
 	GetTransformed(const Matrix trans) const override;
 	/** \copydoc Collider::GetNormals() */
-	[[nodiscard]] vector<Vector3> GetNormals() const override;
+	void GetNormals(vector<Vector3>& out) const override;
 	/** \copydoc Collider::GetProjection() */
 	[[nodiscard]] Range GetProjection(const Vector3 nor) const override;
 
 	/** Apply a transformation matrix to the Collider. */
-	MeshCollider operator*(const Matrix& mat);
+	HullCollider operator*(const Matrix& mat);
 
-	friend void GetEdgeCrosses(const std::shared_ptr<MeshCollider> col1,
-							   const std::shared_ptr<MeshCollider> col2,
+	friend void GetEdgeCrosses(const std::shared_ptr<HullCollider> col1,
+							   const std::shared_ptr<HullCollider> col2,
 							   vector<Vector3>& out);
 
 	void DebugDraw(const Matrix& transform, const Color& col) const override;
@@ -121,31 +120,22 @@ class MeshCollider : public Collider
 	vector<Vector3> normals;
 };
 
-/** Struct representing a collision between colliders. */
-struct HitObj
-{
-	public:
-	const std::weak_ptr<Collider> ThisCol;
-	const std::weak_ptr<Collider> OtherCol;
-	Vector3 HitPos{0.0f, 0.0f, 0.0f};
-};
+///**
+// * Checks if 2 colliders are overlapping
+// *
+// * \param col1 The first collider to check
+// * \param trans1 The transform of the object associated with col1
+// * \param col2 The first collider to check
+// * \param trans2 The transform of the object associated with col1
+// *
+// * \returns A Hit Object struct if the colliders overlap, otheriwse returns
+// * nothing.
+// */
+//std::optional<HitObj> CheckCollision(const Col_Sptr col1, const Matrix trans1,
+//									 const Col_Sptr col2, const Matrix trans2);
 
-/**
- * Checks if 2 colliders are overlapping
- *
- * \param col1 The first collider to check
- * \param trans1 The transform of the object associated with col1
- * \param col2 The first collider to check
- * \param trans2 The transform of the object associated with col1
- *
- * \returns A Hit Object struct if the colliders overlap, otheriwse returns
- * nothing.
- */
-std::optional<HitObj> CheckCollision(const Col_Sptr col1, const Matrix trans1,
-									 const Col_Sptr col2, const Matrix trans2);
-
-/** Creates a rectangular mesh collider centered on (0, 0, 0). */
-std::shared_ptr<MeshCollider> CreateBoxCollider(Matrix transform);
+/** Creates a rectangular convex hull collider centered on (0, 0, 0). */
+std::shared_ptr<HullCollider> CreateBoxCollider(Matrix transform);
 
 #ifndef NDEBUG
 ostream& operator<<(ostream& ostr, HitObj hit);

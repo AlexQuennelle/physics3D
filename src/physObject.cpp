@@ -1,6 +1,7 @@
 #include "physObject.h"
 #include "collider.h"
 
+#include <optional>
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
@@ -8,6 +9,86 @@
 
 namespace phys
 {
+
+std::optional<HitObj> CheckCollision(const PhysObject& obj1,
+									 const PhysObject& obj2)
+{
+	vector<Col_Sptr> cols1 = obj1.GetColliderT(MatrixIdentity());
+	vector<Col_Sptr> cols2 = obj2.GetColliderT(
+		obj2.GetTransformM() * MatrixInvert(obj1.GetTransformM()));
+	bool collision = false;
+	for (const auto& col1 : cols1)
+	{
+		for (const auto& col2 : cols2)
+		{
+			vector<Vector3> nors{obj1.GetPosition() - obj2.GetPosition()};
+			col1->GetNormals(nors);
+			col2->GetNormals(nors);
+			GetEdgeCrosses(std::dynamic_pointer_cast<HullCollider>(col1),
+						   std::dynamic_pointer_cast<HullCollider>(col2), nors);
+#ifndef NDEBUG
+			for (auto nor : nors)
+			{
+				DrawLine3D({0.0f, 0.0f, 0.0f}, nor, WHITE);
+			}
+#endif // !NDEBUG
+			bool hit = true;
+			for (const auto nor : nors)
+			{
+				Range proj1 = col1->GetProjection(nor);
+				Range proj2 = col2->GetProjection(nor);
+#ifdef VERBOSELOG_COL
+				std::cout << proj1 << '\n';
+				std::cout << proj2 << '\n';
+#endif // !VERBOSELOG_COL
+				bool overlapped =
+					proj1.min <= proj2.max && proj2.min <= proj1.max;
+				if (overlapped)
+				{
+#ifdef VERBOSELOG_COL
+					SetTextColor({0, 255, 0, 255});
+					std::cout << nor << " Hit!\n";
+					ClearStyles();
+#endif // !VERBOSELOG_COL
+				}
+				else
+				{
+#ifdef VERBOSELOG_COL
+					SetTextColor({255, 255, 0, 255});
+					std::cout << "Miss!\n";
+					ClearStyles();
+#endif // !VERBOSELOG_COL
+					hit = false;
+					break;
+				}
+			}
+			collision |= hit;
+		}
+	}
+#ifndef NDEBUG
+	//Draw both objects' colliders in the local coordinate space of object 1
+	obj1.GetCollider()->DebugDraw(MatrixIdentity(), {255, 255, 255, 255});
+	obj2.GetCollider()->DebugDraw(obj2.GetTransformM() *
+									  MatrixInvert(obj1.GetTransformM()),
+								  {255, 255, 255, 255});
+#endif // !NDEBUG
+	if (collision)
+	{
+		// NOTE: Debug visualization code
+		obj1.GetCollider()->DebugDraw(obj1.GetTransformM(), {255, 0, 0, 255});
+		obj2.GetCollider()->DebugDraw(obj2.GetTransformM(), {255, 0, 0, 255});
+		HitObj hitObj{
+			.ThisCol = obj1, .OtherCol = obj2, .HitPos = {0.0f, 0.0f, 0.0f}};
+		return hitObj;
+	}
+	else
+	{
+		// NOTE: Debug visualization code
+		obj1.GetCollider()->DebugDraw(obj1.GetTransformM(), {0, 255, 0, 255});
+		obj2.GetCollider()->DebugDraw(obj2.GetTransformM(), {0, 255, 0, 255});
+	}
+	return {};
+}
 
 PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Col_Sptr col)
 {
@@ -56,8 +137,7 @@ void PhysObject::Draw() const
 
 PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)
 {
-	// TODO: Make rotation work
-	std::shared_ptr<MeshCollider> col =
+	std::shared_ptr<HullCollider> col =
 		CreateBoxCollider(MatrixScale(dims.x, dims.y, dims.z));
 	Mesh mesh = GenMeshCube(dims.x, dims.y, dims.z);
 #if defined(PLATFORM_WEB)
@@ -72,5 +152,13 @@ PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)
 
 	return {pos, mesh, col, shader};
 }
+
+#ifndef NDEBUG
+ostream& operator<<(ostream& ostr, HitObj& hit)
+{
+	ostr << hit.HitPos << '\n';
+	return ostr;
+}
+#endif // !NDEBUG
 
 } //namespace phys

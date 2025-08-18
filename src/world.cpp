@@ -11,6 +11,7 @@
 #include <iostream>
 #include <memory>
 #include <numbers>
+#include <optional>
 #include <raylib.h>
 #include <raymath.h>
 #include <rlImGui.h>
@@ -59,7 +60,7 @@ void World::Update()
 	ClearBackground({100, 149, 237, 255});
 	BeginMode3D(cam);
 	//objects[1].Rotate(
-	//	QuaternionFromAxisAngle({1.0f, 0.0f, 0.0f}, 1.0f * deltaTime));
+	//	QuaternionFromAxisAngle({0.0f, 1.0f, 0.0f}, 1.0f * deltaTime));
 	for (auto obj : this->objects)
 	{
 		obj.Update();
@@ -72,9 +73,7 @@ void World::Update()
 			if (i == j)
 				break;
 			auto obj2 = this->objects[j];
-			std::optional<HitObj> col =
-				CheckCollision(obj1.GetCollider(), obj1.GetTransformM(),
-							   obj2.GetCollider(), obj2.GetTransformM());
+			std::optional<HitObj> col = CheckCollision(obj1, obj2);
 			if (col.has_value())
 			{
 			}

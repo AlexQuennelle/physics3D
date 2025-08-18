@@ -2,6 +2,7 @@
 
 #include "collider.h"
 
+#include <optional>
 #include <raylib.h>
 #include <raymath.h>
 
@@ -93,6 +94,14 @@ class PhysObject
 
 	/** \returns A pointer to the object's physics Collider. */
 	[[nodiscard]] Col_Sptr GetCollider() const { return this->collider; }
+	[[nodiscard]] vector<Col_Sptr> GetColliderT() const
+	{
+		return collider->GetTransformed(this->GetTransformM());
+	}
+	[[nodiscard]] vector<Col_Sptr> GetColliderT(Matrix trans) const
+	{
+		return collider->GetTransformed(trans);
+	}
 	/** Sets the shader to use when drawing the object. */
 	void SetShader(const Shader& newShader)
 	{
@@ -116,6 +125,19 @@ class PhysObject
 	//debug stuff
 	int ColLoc;
 };
+
+// NOTE: This struct needs to be reworked
+/** Struct representing a collision between colliders. */
+struct HitObj
+{
+	public:
+	PhysObject ThisCol;
+	PhysObject OtherCol;
+	Vector3 HitPos{0.0f, 0.0f, 0.0f};
+};
+
+std::optional<HitObj> CheckCollision(const PhysObject& obj1,
+									 const PhysObject& obj2);
 
 PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims);
 
