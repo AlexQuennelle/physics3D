@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <cstdlib>
-#include <iostream>
 #include <optional>
 #include <raylib.h>
 #include <raymath.h>
@@ -12,7 +11,6 @@
 
 namespace phys
 {
-void CheckFaceNors(Col_Sptr col1, Col_Sptr col2);
 
 std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 									 const PhysObject& obj2)
@@ -30,7 +28,7 @@ std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 			col2->GetNormals(nors);
 			GetEdgeCrosses(std::dynamic_pointer_cast<HullCollider>(col1),
 						   std::dynamic_pointer_cast<HullCollider>(col2), nors);
-			//CheckFaceNors(col1, col2);
+			CheckFaceNors(col1, col2);
 			CheckFaceNors(col2, col1);
 			//#ifndef NDEBUG
 			//			for (auto nor : nors)
@@ -112,8 +110,8 @@ void CheckFaceNors(Col_Sptr col1, Col_Sptr col2)
 			255,
 		};
 		Vector3 support = col2->GetSupportPoint({-nor.x, -nor.y, -nor.z});
-		DrawLine3D({0.0f, 0.0f, 0.0f}, nor, color);
-		DrawSphere(nor, 0.025f, color);
+		DrawLine3D(col1->origin, col1->origin + nor, color);
+		DrawSphere(col1->origin + nor, 0.025f, color);
 		DrawSphere(support, 0.05f, color);
 #endif // !NDEBUG
 	}

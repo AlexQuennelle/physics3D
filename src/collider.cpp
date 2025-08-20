@@ -127,6 +127,7 @@ void HullCollider::DebugDraw(const Matrix& transform, const Color& col) const
 		Vector3 end = Vector3Transform(this->vertices[edge.b], transform);
 		DrawLine3D(start, end, col);
 	}
+	DrawSphere(this->origin * transform, 0.025f, col);
 }
 
 std::shared_ptr<HullCollider> CreateBoxCollider(Matrix transform)
@@ -176,7 +177,8 @@ std::shared_ptr<HullCollider> CreateBoxCollider(Matrix transform)
 								 {transform.m12, transform.m13, transform.m14});
 		newNors.push_back(Vector3Normalize(newNor));
 	}
-	return std::make_shared<HullCollider>(newVerts, edges, newNors);
+	return std::make_shared<HullCollider>(Vector3Zero() * transform, newVerts,
+										  edges, newNors);
 }
 
 CompoundCollider::CompoundCollider(const vector<Col_Sptr>& cols)

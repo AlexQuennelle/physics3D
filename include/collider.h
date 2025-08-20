@@ -68,6 +68,7 @@ class Collider
 
 	virtual void DebugDraw(const Matrix& /*unused*/,
 						   const Color& /*unused*/) const {};
+	friend void CheckFaceNors(Col_Sptr col1, Col_Sptr col2);
 
 	protected:
 	Vector3 origin{0.0f, 0.0f, 0.0f};
