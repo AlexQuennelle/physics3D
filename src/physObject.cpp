@@ -1,6 +1,9 @@
 #include "physObject.h"
 #include "collider.h"
 
+#include <cstdint>
+#include <cstdlib>
+#include <iostream>
 #include <optional>
 #include <raylib.h>
 #include <raymath.h>
@@ -9,6 +12,7 @@
 
 namespace phys
 {
+void CheckFaceNors(Col_Sptr col1, Col_Sptr col2);
 
 std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 									 const PhysObject& obj2)
@@ -26,12 +30,14 @@ std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 			col2->GetNormals(nors);
 			GetEdgeCrosses(std::dynamic_pointer_cast<HullCollider>(col1),
 						   std::dynamic_pointer_cast<HullCollider>(col2), nors);
-#ifndef NDEBUG
-			for (auto nor : nors)
-			{
-				DrawLine3D({0.0f, 0.0f, 0.0f}, nor, WHITE);
-			}
-#endif // !NDEBUG
+			//CheckFaceNors(col1, col2);
+			CheckFaceNors(col2, col1);
+			//#ifndef NDEBUG
+			//			for (auto nor : nors)
+			//			{
+			//				DrawLine3D({0.0f, 0.0f, 0.0f}, nor, WHITE);
+			//			}
+			//#endif // !NDEBUG
 			bool hit = true;
 			for (const auto nor : nors)
 			{
@@ -88,6 +94,29 @@ std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 		obj2.GetCollider()->DebugDraw(obj2.GetTransformM(), {0, 255, 0, 255});
 	}
 	return {};
+}
+void CheckFaceNors(Col_Sptr col1, Col_Sptr col2)
+{
+	vector<Vector3> nors;
+	col1->GetNormals(nors);
+	srand(static_cast<int>(nors[0].x + nors[1].y));
+	for (auto nor : nors)
+	{
+		Range proj1 = col1->GetProjection(nor);
+		Range proj2 = col2->GetProjection(nor);
+#ifndef NDEBUG
+		Color color = {
+			static_cast<uint8_t>(rand()),
+			static_cast<uint8_t>(rand()),
+			static_cast<uint8_t>(rand()),
+			255,
+		};
+		Vector3 support = col2->GetSupportPoint({-nor.x, -nor.y, -nor.z});
+		DrawLine3D({0.0f, 0.0f, 0.0f}, nor, color);
+		DrawSphere(nor, 0.025f, color);
+		DrawSphere(support, 0.05f, color);
+#endif // !NDEBUG
+	}
 }
 
 PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Col_Sptr col)

@@ -18,6 +18,7 @@
 
 namespace phys
 {
+
 World::World() : imguiIO(ImGui::GetIO())
 {
 	SetTextColor(INFO);
@@ -35,7 +36,8 @@ World::World() : imguiIO(ImGui::GetIO())
 		 .projection = 0});
 
 	this->objects.push_back(
-		CreateBoxObject({0.0f, 0.0f, -0.75f}, {1.0f, 1.0f, 1.0f}));
+		CreateBoxObject({2.0f, 0.0f, -0.75f}, {1.0f, 1.0f, 1.0f}));
+		//CreateBoxObject({2.0f, 0.0f, 0.5f}, {1.0f, 1.0f, 1.0f}));
 	this->objects[0].Rotate(QuaternionFromEuler(0.0f, 45.0f * DEG2RAD, 0.0f));
 	//this->objects.push_back(
 	//	CreateBoxObject({0.0f, 0.0f, 1.1f}, {1.0f, 1.0f, 1.0f}));
@@ -180,7 +182,7 @@ void World::DebugAddStairObj()
 		RESOURCES_PATH "shaders/litShader_web.frag"));
 #else
 	this->objects.emplace_back(PhysObject(
-		{0.0f, 0.0f, 0.5f}, mesh, std::dynamic_pointer_cast<Collider>(col),
+		{2.0f, 0.0f, 0.5f}, mesh, std::dynamic_pointer_cast<Collider>(col),
 		RESOURCES_PATH "shaders/litShader.vert",
 		RESOURCES_PATH "shaders/litShader.frag"));
 #endif // defined ()

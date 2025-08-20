@@ -45,7 +45,15 @@ HullCollider::HullCollider(const vector<Vector3>& verts,
 	this->normals.insert(this->normals.end(), nors.begin(), nors.end());
 	this->edges.insert(this->edges.end(), edges.begin(), edges.end());
 }
-
+HullCollider::HullCollider(const Vector3 origin, const vector<Vector3>& verts,
+						   const vector<Edge>& edges,
+						   const vector<Vector3>& nors)
+{
+	this->vertices.insert(this->vertices.end(), verts.begin(), verts.end());
+	this->normals.insert(this->normals.end(), nors.begin(), nors.end());
+	this->edges.insert(this->edges.end(), edges.begin(), edges.end());
+	this->origin = origin;
+}
 vector<Col_Sptr> HullCollider::GetTransformed(const Matrix trans) const
 {
 #ifdef VERBOSELOG_COL
@@ -73,7 +81,8 @@ vector<Col_Sptr> HullCollider::GetTransformed(const Matrix trans) const
 		newNors.push_back(Vector3Normalize(newNor));
 	}
 	vector<Col_Sptr> cols{
-		Col_Sptr(new HullCollider(newVerts, this->edges, newNors))};
+		Col_Sptr(new HullCollider(Vector3Transform(this->origin, trans),
+								  newVerts, this->edges, newNors))};
 	return cols;
 }
 void HullCollider::GetNormals(vector<Vector3>& out) const
@@ -94,22 +103,29 @@ Range HullCollider::GetProjection(const Vector3 nor) const
 	}
 	return proj;
 }
-
-vector<Col_Sptr> CompoundCollider::GetTransformed(const Matrix trans) const
+Vector3 HullCollider::GetSupportPoint(const Vector3& axis) const
 {
-	vector<Col_Sptr> cols;
-	for (const auto& elem : this->colliders)
+	Vector3 support{};
+	float supportVal{-1.0f};
+	for (const auto vert : this->vertices)
 	{
-		vector<Col_Sptr> transformed = elem->GetTransformed(trans);
-		cols.insert(cols.end(), transformed.begin(), transformed.end());
+		if (Vector3DotProduct(axis, Vector3Normalize(vert - this->origin)) >
+			supportVal)
+		{
+			supportVal =
+				Vector3DotProduct(axis, Vector3Normalize(vert - this->origin));
+			support = vert;
+		}
 	}
-	return cols;
+	return support;
 }
-void CompoundCollider::GetNormals(vector<Vector3>& out) const
+void HullCollider::DebugDraw(const Matrix& transform, const Color& col) const
 {
-	for (const auto& col : this->colliders)
+	for (const auto& edge : this->edges)
 	{
-		col->GetNormals(out);
+		Vector3 start = Vector3Transform(this->vertices[edge.a], transform);
+		Vector3 end = Vector3Transform(this->vertices[edge.b], transform);
+		DrawLine3D(start, end, col);
 	}
 }
 
@@ -135,9 +151,9 @@ std::shared_ptr<HullCollider> CreateBoxCollider(Matrix transform)
 		{.a = 3, .b = 7}, {.a = 4, .b = 6}, {.a = 5, .b = 7}, {.a = 6, .b = 7},
 	};
 	static const vector<Vector3> nors{
-		{.x = 1.0f, .y = 0.0f, .z = 0.0f},
-		{.x = 0.0f, .y = 1.0f, .z = 0.0f},
-		{.x = 0.0f, .y = 0.0f, .z = 1.0f},
+		{.x = 1.0f, .y = 0.0f, .z = 0.0f},	{.x = 0.0f, .y = 1.0f, .z = 0.0f},
+		{.x = 0.0f, .y = 0.0f, .z = 1.0f},	{.x = -1.0f, .y = 0.0f, .z = 0.0f},
+		{.x = 0.0f, .y = -1.0f, .z = 0.0f}, {.x = 0.0f, .y = 0.0f, .z = -1.0f},
 	};
 	vector<Vector3> newNors;
 
@@ -167,22 +183,33 @@ CompoundCollider::CompoundCollider(const vector<Col_Sptr>& cols)
 {
 	this->colliders = cols;
 }
-
+vector<Col_Sptr> CompoundCollider::GetTransformed(const Matrix trans) const
+{
+	vector<Col_Sptr> cols;
+	for (const auto& elem : this->colliders)
+	{
+		vector<Col_Sptr> transformed = elem->GetTransformed(trans);
+		cols.insert(cols.end(), transformed.begin(), transformed.end());
+	}
+	return cols;
+}
+void CompoundCollider::GetNormals(vector<Vector3>& out) const
+{
+	for (const auto& col : this->colliders)
+	{
+		col->GetNormals(out);
+	}
+}
+Vector3 CompoundCollider::GetSupportPoint(const Vector3& axis) const
+{
+	return {0.0f, 0.0f, 0.0f};
+}
 void CompoundCollider::DebugDraw(const Matrix& transform,
 								 const Color& colour) const
 {
 	for (const auto& col : this->colliders)
 	{
 		col->DebugDraw(transform, colour);
-	}
-}
-void HullCollider::DebugDraw(const Matrix& transform, const Color& col) const
-{
-	for (const auto& edge : this->edges)
-	{
-		Vector3 start = Vector3Transform(this->vertices[edge.a], transform);
-		Vector3 end = Vector3Transform(this->vertices[edge.b], transform);
-		DrawLine3D(start, end, col);
 	}
 }
 

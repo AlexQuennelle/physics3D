@@ -63,10 +63,14 @@ class Collider
 		return {.min = 0.0f, .max = 0.0f};
 	}
 
+	[[nodiscard]] virtual Vector3
+	GetSupportPoint(const Vector3& axis) const = 0;
+
 	virtual void DebugDraw(const Matrix& /*unused*/,
 						   const Color& /*unused*/) const {};
 
-	private:
+	protected:
+	Vector3 origin{0.0f, 0.0f, 0.0f};
 };
 
 /**
@@ -84,6 +88,8 @@ class CompoundCollider : public Collider
 	/** \copydoc Collider::GetNormals() */
 	void GetNormals(vector<Vector3>& out) const override;
 
+	[[nodiscard]] Vector3 GetSupportPoint(const Vector3& axis) const override;
+
 	void DebugDraw(const Matrix& transform, const Color& col) const override;
 
 	private:
@@ -96,6 +102,8 @@ class HullCollider : public Collider
 	public:
 	HullCollider(const vector<Vector3>& verts, const vector<Edge>& edges,
 				 const vector<Vector3>& nors);
+	HullCollider(const Vector3 origin, const vector<Vector3>& verts,
+				 const vector<Edge>& edges, const vector<Vector3>& nors);
 
 	/** \copydoc Collider::GetTransformed() */
 	[[nodiscard]] vector<Col_Sptr>
@@ -108,6 +116,8 @@ class HullCollider : public Collider
 	/** Apply a transformation matrix to the Collider. */
 	HullCollider operator*(const Matrix& mat);
 
+	[[nodiscard]] Vector3 GetSupportPoint(const Vector3& axis) const override;
+
 	friend void GetEdgeCrosses(const std::shared_ptr<HullCollider> col1,
 							   const std::shared_ptr<HullCollider> col2,
 							   vector<Vector3>& out);
@@ -119,20 +129,6 @@ class HullCollider : public Collider
 	vector<Vector3> vertices;
 	vector<Vector3> normals;
 };
-
-///**
-// * Checks if 2 colliders are overlapping
-// *
-// * \param col1 The first collider to check
-// * \param trans1 The transform of the object associated with col1
-// * \param col2 The first collider to check
-// * \param trans2 The transform of the object associated with col1
-// *
-// * \returns A Hit Object struct if the colliders overlap, otheriwse returns
-// * nothing.
-// */
-//std::optional<HitObj> CheckCollision(const Col_Sptr col1, const Matrix trans1,
-//									 const Col_Sptr col2, const Matrix trans2);
 
 /** Creates a rectangular convex hull collider centered on (0, 0, 0). */
 std::shared_ptr<HullCollider> CreateBoxCollider(Matrix transform);
