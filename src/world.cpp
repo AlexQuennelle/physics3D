@@ -36,13 +36,16 @@ World::World() : imguiIO(ImGui::GetIO())
 		 .projection = 0});
 
 	this->objects.push_back(
-		CreateBoxObject({2.0f, 0.0f, -0.75f}, {1.0f, 1.0f, 1.0f}));
-		//CreateBoxObject({2.0f, 0.0f, 0.5f}, {1.0f, 1.0f, 1.0f}));
-	this->objects[0].Rotate(QuaternionFromEuler(0.0f, 45.0f * DEG2RAD, 0.0f));
-	//this->objects.push_back(
-	//	CreateBoxObject({0.0f, 0.0f, 1.1f}, {1.0f, 1.0f, 1.0f}));
-	this->DebugAddStairObj();
-	this->objects[1].Rotate(QuaternionFromEuler(-45.0f * DEG2RAD, 0.0f, 0.0f));
+		CreateBoxObject({2.0f, 0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}));
+	//CreateBoxObject({2.0f, 0.0f, 0.5f}, {1.0f, 1.0f, 1.0f}));
+	//this->objects[0].Rotate(QuaternionFromEuler(0.0f, 45.0f * DEG2RAD, 0.0f));
+	this->objects.push_back(
+		CreateBoxObject({2.0f, 0.0f, 0.5f}, {1.0f, 1.0f, 1.0f}));
+	//this->DebugAddStairObj({2.0f, 0.0f, 0.5f});
+	this->objects[1].Rotate(
+		QuaternionFromAxisAngle({0.0f, 1.0f, 0.0f}, 45.0f * DEG2RAD));
+	this->objects[1].Rotate(
+		QuaternionFromAxisAngle({1.0f, 0.0f, 0.0f}, -35.0f * DEG2RAD));
 	SetTextColor(INFO);
 	std::cout << "Done Initializing\n";
 	ClearStyles();
@@ -70,10 +73,10 @@ void World::Update()
 	for (uint32_t i{0}; i < this->objects.size(); i++)
 	{
 		auto obj1 = this->objects[i];
-		for (uint32_t j{0}; j < this->objects.size(); j++)
+		for (uint32_t j{i + 1}; j < this->objects.size(); j++)
 		{
 			if (i == j)
-				break;
+				continue;
 			auto obj2 = this->objects[j];
 			std::optional<HitObj> col = CheckCollision(obj1, obj2);
 			if (col.has_value())
@@ -144,7 +147,7 @@ void World::ProcessInput()
 }
 
 // HACK: The following is a hack for testing purposes.
-void World::DebugAddStairObj()
+void World::DebugAddStairObj(Vector3 pos)
 {
 	Model model = LoadModel(RESOURCES_PATH "stairs.obj");
 
@@ -181,10 +184,10 @@ void World::DebugAddStairObj()
 		RESOURCES_PATH "shaders/litShader_web.vert",
 		RESOURCES_PATH "shaders/litShader_web.frag"));
 #else
-	this->objects.emplace_back(PhysObject(
-		{2.0f, 0.0f, 0.5f}, mesh, std::dynamic_pointer_cast<Collider>(col),
+	this->objects.emplace_back(
+		pos, mesh, std::dynamic_pointer_cast<Collider>(col),
 		RESOURCES_PATH "shaders/litShader.vert",
-		RESOURCES_PATH "shaders/litShader.frag"));
+		RESOURCES_PATH "shaders/litShader.frag");
 #endif // defined ()
 }
 

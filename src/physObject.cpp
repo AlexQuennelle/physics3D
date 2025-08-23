@@ -15,9 +15,11 @@ namespace phys
 std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 									 const PhysObject& obj2)
 {
-	vector<Col_Sptr> cols1 = obj1.GetColliderT(MatrixIdentity());
-	vector<Col_Sptr> cols2 = obj2.GetColliderT(
-		obj2.GetTransformM() * MatrixInvert(obj1.GetTransformM()));
+	vector<Col_Sptr> cols1;
+	obj1.GetColliderT(MatrixIdentity(), cols1);
+	vector<Col_Sptr> cols2;
+	obj2.GetColliderT(obj2.GetTransformM() * MatrixInvert(obj1.GetTransformM()),
+					  cols2);
 	bool collision = false;
 	for (const auto& col1 : cols1)
 	{

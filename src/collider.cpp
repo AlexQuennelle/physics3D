@@ -1,9 +1,15 @@
 #include "collider.h"
+#include "halfEdge.h"
 
+#include <algorithm>
+#include <cstdint>
+#include <iterator>
 #include <limits>
+#include <map>
 #include <memory>
 #include <raylib.h>
 #include <raymath.h>
+#include <utility>
 #include <vector>
 #ifndef NDEBUG
 //#define VERBOSELOG_COL
@@ -26,68 +32,129 @@ void GetEdgeCrosses(const std::shared_ptr<HullCollider> col1,
 					const std::shared_ptr<HullCollider> col2,
 					vector<Vector3>& out)
 {
-	for (auto edge1 : col1->edges)
-	{
-		Vector3 axis1 = col1->vertices[edge1.a] - col1->vertices[edge1.b];
-		for (auto edge2 : col2->edges)
-		{
-			Vector3 axis2 = col2->vertices[edge2.a] - col2->vertices[edge2.b];
-			out.push_back(Vector3Normalize(Vector3CrossProduct(axis1, axis2)));
-		}
-	}
+	// TODO: Rework for HE structure
+	//for (auto edge1 : col1->edges)
+	//{
+	//	Vector3 axis1 = col1->vertices[edge1.a] - col1->vertices[edge1.b];
+	//	for (auto edge2 : col2->edges)
+	//	{
+	//		Vector3 axis2 = col2->vertices[edge2.a] - col2->vertices[edge2.b];
+	//		out.push_back(Vector3Normalize(Vector3CrossProduct(axis1, axis2)));
+	//	}
+	//}
 }
 
-HullCollider::HullCollider(const vector<Vector3>& verts,
-						   const vector<Edge>& edges,
-						   const vector<Vector3>& nors)
+HullCollider::HullCollider(const vector<HE::HVertex>& verts,
+						   const vector<HE::FaceInit>& faces,
+						   const Vector3 origin)
 {
-	this->vertices.insert(this->vertices.end(), verts.begin(), verts.end());
-	this->normals.insert(this->normals.end(), nors.begin(), nors.end());
-	this->edges.insert(this->edges.end(), edges.begin(), edges.end());
-}
-HullCollider::HullCollider(const Vector3 origin, const vector<Vector3>& verts,
-						   const vector<Edge>& edges,
-						   const vector<Vector3>& nors)
-{
-	this->vertices.insert(this->vertices.end(), verts.begin(), verts.end());
-	this->normals.insert(this->normals.end(), nors.begin(), nors.end());
-	this->edges.insert(this->edges.end(), edges.begin(), edges.end());
 	this->origin = origin;
+	//this->vertices.insert(this->vertices.end(), verts.begin(), verts.end());
+	for (const auto vert : verts)
+	{
+		this->vertices.push_back(vert);
+		this->vertices[this->vertices.size() - 1].edgeArr = &this->edges;
+	}
+	//this->normals.insert(this->normals.end(), nors.begin(), nors.end());
+	//this->edges.insert(this->edges.end(), edges.begin(), edges.end());
+	//this->origin = origin;
+	using vertPair = std::pair<uint8_t, uint8_t>;
+	std::map<vertPair, HE::HEdge> tmpEdges;
+	uint8_t anchor{0};
+	for (auto face : faces)
+	{
+		this->faces.emplace_back(face.normal);
+		this->faces[this->faces.size() - 1].edgeArr = &this->edges;
+		this->edges.resize(this->edges.size() + face.indices.size());
+		for (int i{0}; i < face.indices.size(); i++)
+		{
+			vertPair pair{face.indices[i],
+						  face.indices[i % face.indices.size()]};
+			tmpEdges[pair] = HE::HEdge();
+
+			tmpEdges[pair].vertArr = &this->vertices;
+			tmpEdges[pair].edgeArr = &this->edges;
+			tmpEdges[pair].faceArr = &this->faces;
+
+			tmpEdges[pair].faceID = this->faces.size() - 1;
+			tmpEdges[pair].vertID = face.indices[i];
+		}
+		for (int i{0}; i < face.indices.size(); i++)
+		{
+			vertPair pair{face.indices[i],
+						  face.indices[i % face.indices.size()]};
+			vertPair pairO{face.indices[i % face.indices.size()],
+						   face.indices[i]};
+			if (tmpEdges.contains(pairO))
+			{
+				tmpEdges[pair].twinID =
+					std::distance(tmpEdges.begin(), tmpEdges.find(pairO));
+				tmpEdges[pairO].twinID =
+					std::distance(tmpEdges.begin(), tmpEdges.find(pair));
+			}
+		}
+		this->faces[this->faces.size() - 1].edgeID = anchor;
+		anchor += face.indices.size();
+	}
+	this->edges.reserve(tmpEdges.size());
+	for (auto& edge : tmpEdges)
+	{
+		this->edges.push_back(edge.second);
+		//if (this->edges[this->edges.size() - 1].Vertex()->Edge() == nullptr)
+		//{
+		this->edges[this->edges.size() - 1].Vertex()->edgeID =
+			this->edges.size() - 1;
+		//}
+	}
 }
-vector<Col_Sptr> HullCollider::GetTransformed(const Matrix trans) const
+HullCollider::HullCollider(const HullCollider& copy)
 {
-#ifdef VERBOSELOG_COL
-	std::cout << trans << '\n';
-#endif // VERBOSELOG_COL
-	vector<Vector3> newVerts;
-	newVerts.reserve(this->vertices.size());
-	for (auto vert : this->vertices)
+	//std::ranges::copy(copy.vertices,this->vertices.begin());
+	//std::ranges::copy(copy.edges,this->edges.begin());
+	//std::ranges::copy(copy.faces,this->faces.begin());
+	this->vertices.reserve(copy.vertices.size());
+	for (auto vert : copy.vertices)
 	{
-#ifdef VERBOSELOG_COL
-		std::cout << vert << Vector3Transform(vert, trans);
-		std::cout << '\n';
-#endif
-		newVerts.push_back(Vector3Transform(vert, trans));
+		vert.edgeArr = &this->edges;
+		this->vertices.push_back(vert);
 	}
-#ifdef VERBOSELOG_COL
-	std::cout << '\n';
-#endif
-	vector<Vector3> newNors;
-	newNors.reserve(this->normals.size());
-	for (auto nor : this->normals)
+	this->edges.reserve(copy.edges.size());
+	for (auto edge : copy.edges)
 	{
-		auto newNor = Vector3Transform(nor, trans);
-		newNor = Vector3Subtract(newNor, {trans.m12, trans.m13, trans.m14});
-		newNors.push_back(Vector3Normalize(newNor));
+		edge.vertArr = &this->vertices;
+		edge.edgeArr = &this->edges;
+		edge.faceArr = &this->faces;
+		this->edges.push_back(edge);
 	}
-	vector<Col_Sptr> cols{
-		Col_Sptr(new HullCollider(Vector3Transform(this->origin, trans),
-								  newVerts, this->edges, newNors))};
-	return cols;
+	this->faces.reserve(copy.faces.size());
+	for (auto face : copy.faces)
+	{
+		face.edgeArr = &this->edges;
+		this->faces.push_back(face);
+	}
+}
+void HullCollider::GetTransformed(const Matrix trans,
+								  vector<Col_Sptr>& out) const
+{
+	auto newCol = *this;
+	for (int i{0}; i < newCol.vertices.size(); i++)
+	{
+		newCol.vertices[i] = newCol.vertices[i] * trans;
+	}
+	for (int i{0}; i < newCol.faces.size(); i++)
+	{
+		newCol.faces[i].normal = newCol.faces[i].normal * trans;
+	}
+	newCol.origin = newCol.origin * trans;
+	out.push_back(std::make_shared<HullCollider>(newCol));
 }
 void HullCollider::GetNormals(vector<Vector3>& out) const
 {
-	out.insert(out.end(), this->normals.begin(), this->normals.end());
+	//out.insert(out.end(), this->normals.begin(), this->normals.end());
+	for (const auto face : this->faces)
+	{
+		out.push_back(face.normal);
+	}
 }
 Range HullCollider::GetProjection(const Vector3 nor) const
 {
@@ -97,7 +164,7 @@ Range HullCollider::GetProjection(const Vector3 nor) const
 	};
 	for (const auto vert : this->vertices)
 	{
-		float projected = Vector3DotProduct(vert, nor);
+		float projected = Vector3DotProduct(vert.Vec(), nor);
 		proj.min = projected < proj.min ? projected : proj.min;
 		proj.max = projected > proj.max ? projected : proj.max;
 	}
@@ -105,16 +172,17 @@ Range HullCollider::GetProjection(const Vector3 nor) const
 }
 Vector3 HullCollider::GetSupportPoint(const Vector3& axis) const
 {
+	// TODO: Potentially clean up
 	Vector3 support{};
 	float supportVal{-1.0f};
 	for (const auto vert : this->vertices)
 	{
-		if (Vector3DotProduct(axis, Vector3Normalize(vert - this->origin)) >
-			supportVal)
+		if (Vector3DotProduct(
+				axis, Vector3Normalize(vert.Vec() - this->origin)) > supportVal)
 		{
-			supportVal =
-				Vector3DotProduct(axis, Vector3Normalize(vert - this->origin));
-			support = vert;
+			supportVal = Vector3DotProduct(
+				axis, Vector3Normalize(vert.Vec() - this->origin));
+			support = vert.Vec();
 		}
 	}
 	return support;
@@ -123,19 +191,21 @@ void HullCollider::DebugDraw(const Matrix& transform, const Color& col) const
 {
 	for (const auto& edge : this->edges)
 	{
-		Vector3 start = Vector3Transform(this->vertices[edge.a], transform);
-		Vector3 end = Vector3Transform(this->vertices[edge.b], transform);
+		Vector3 start = edge.Vertex()->Vec() * transform;
+		//Vector3 end = edge.TailVert()->Vec() * transform;
+		Vector3 end = edge.Twin()->Vertex()->Vec() * transform;
 		DrawLine3D(start, end, col);
 	}
 	DrawSphere(this->origin * transform, 0.025f, col);
 }
+void HullCollider::GetFaceInits(vector<HE::FaceInit>& out) {}
 
 std::shared_ptr<HullCollider> CreateBoxCollider(Matrix transform)
 {
 #ifdef VERBOSELOG_COL
 	std::cout << transform << '\n';
 #endif
-	static const vector<Vector3> verts{
+	static const vector<HE::HVertex> verts{
 		{.x = -0.5f, .y = -0.5f, .z = -0.5f},
 		{.x = 0.5f, .y = -0.5f, .z = -0.5f},
 		{.x = -0.5f, .y = 0.5f, .z = -0.5f},
@@ -145,23 +215,23 @@ std::shared_ptr<HullCollider> CreateBoxCollider(Matrix transform)
 		{.x = -0.5f, .y = 0.5f, .z = 0.5f},
 		{.x = 0.5f, .y = 0.5f, .z = 0.5f},
 	};
-	vector<Vector3> newVerts;
-	static const vector<Edge> edges{
-		{.a = 0, .b = 1}, {.a = 0, .b = 2}, {.a = 0, .b = 4}, {.a = 3, .b = 4},
-		{.a = 1, .b = 5}, {.a = 1, .b = 3}, {.a = 2, .b = 6}, {.a = 2, .b = 5},
-		{.a = 3, .b = 7}, {.a = 4, .b = 6}, {.a = 5, .b = 7}, {.a = 6, .b = 7},
-	};
+	vector<HE::HVertex> newVerts;
+	//static const vector<Edge> edges{
+	//	{.a = 0, .b = 1}, {.a = 0, .b = 2}, {.a = 0, .b = 4}, {.a = 3, .b = 4},
+	//	{.a = 1, .b = 5}, {.a = 1, .b = 3}, {.a = 2, .b = 6}, {.a = 2, .b = 5},
+	//	{.a = 3, .b = 7}, {.a = 4, .b = 6}, {.a = 5, .b = 7}, {.a = 6, .b = 7},
+	//};
 	static const vector<Vector3> nors{
 		{.x = 1.0f, .y = 0.0f, .z = 0.0f},	{.x = 0.0f, .y = 1.0f, .z = 0.0f},
 		{.x = 0.0f, .y = 0.0f, .z = 1.0f},	{.x = -1.0f, .y = 0.0f, .z = 0.0f},
 		{.x = 0.0f, .y = -1.0f, .z = 0.0f}, {.x = 0.0f, .y = 0.0f, .z = -1.0f},
 	};
-	vector<Vector3> newNors;
+	//vector<Vector3> newNors;
 
 	newVerts.reserve(verts.size());
 	for (auto vert : verts)
 	{
-		newVerts.push_back(Vector3Transform(vert, transform));
+		newVerts.push_back(vert * transform);
 	}
 #ifdef VERBOSELOG_COL
 	for (auto vert : newVerts)
@@ -169,31 +239,39 @@ std::shared_ptr<HullCollider> CreateBoxCollider(Matrix transform)
 		std::cout << vert << '\n';
 	}
 #endif // VERBOSELOG_COL
-	newNors.reserve(nors.size());
+	//newNors.reserve(nors.size());
+	vector<HE::FaceInit> faces;
+	faces.reserve(nors.size());
 	for (auto nor : nors)
 	{
-		auto newNor = Vector3Transform(nor, transform);
+		auto newNor = nor * transform;
 		newNor = Vector3Subtract(newNor,
 								 {transform.m12, transform.m13, transform.m14});
-		newNors.push_back(Vector3Normalize(newNor));
+		//newNors.push_back(Vector3Normalize(newNor));
+		faces.emplace_back(Vector3Normalize(newNor));
 	}
-	return std::make_shared<HullCollider>(Vector3Zero() * transform, newVerts,
-										  edges, newNors);
+	faces[0].indices = {0, 2, 4, 6};
+	faces[1].indices = {1, 3, 5, 7};
+	faces[2].indices = {0, 1, 3, 4};
+	faces[3].indices = {2, 5, 6, 7};
+	faces[4].indices = {0, 1, 2, 5};
+	faces[5].indices = {3, 4, 6, 7};
+	return std::make_shared<HullCollider>(newVerts, faces,
+										  Vector3Zero() * transform);
 }
 
 CompoundCollider::CompoundCollider(const vector<Col_Sptr>& cols)
 {
 	this->colliders = cols;
 }
-vector<Col_Sptr> CompoundCollider::GetTransformed(const Matrix trans) const
+void CompoundCollider::GetTransformed(const Matrix trans,
+									  vector<Col_Sptr>& out) const
 {
-	vector<Col_Sptr> cols;
 	for (const auto& elem : this->colliders)
 	{
-		vector<Col_Sptr> transformed = elem->GetTransformed(trans);
-		cols.insert(cols.end(), transformed.begin(), transformed.end());
+		//vector<Col_Sptr> transformed = elem->GetTransformed(trans);
+		elem->GetTransformed(trans, out);
 	}
-	return cols;
 }
 void CompoundCollider::GetNormals(vector<Vector3>& out) const
 {

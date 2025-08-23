@@ -1,8 +1,11 @@
 #pragma once
 
+#include "halfEdge.h"
+
 #include <cstdint>
 #include <memory>
 #include <raylib.h>
+#include <raymath.h>
 #include <vector>
 #ifndef NDEBUG
 #include <ostream>
@@ -44,11 +47,9 @@ class Collider
 	 * \returns A vector of Colliders transformed by the supplied matrix. The
 	 * Vector may contain multiple Colliders.
 	 */
-	[[nodiscard]] virtual vector<Col_Sptr>
-	GetTransformed(const Matrix /*unused*/) const
-	{
-		return {};
-	}
+	virtual void GetTransformed(const Matrix /*unused*/,
+								vector<Col_Sptr>& /*unused*/) const = 0;
+
 	/**
 	 * Gets the relevant normals for doing the Separating Axis Theorem to check
 	 * collisions and overlap.
@@ -84,8 +85,8 @@ class CompoundCollider : public Collider
 	CompoundCollider(const vector<Col_Sptr>& cols);
 
 	/** \copydoc Collider::GetTransformed() */
-	[[nodiscard]] vector<Col_Sptr>
-	GetTransformed(const Matrix trans) const override;
+	void GetTransformed(const Matrix trans,
+						vector<Col_Sptr>& out) const override;
 	/** \copydoc Collider::GetNormals() */
 	void GetNormals(vector<Vector3>& out) const override;
 
@@ -101,14 +102,14 @@ class CompoundCollider : public Collider
 class HullCollider : public Collider
 {
 	public:
-	HullCollider(const vector<Vector3>& verts, const vector<Edge>& edges,
-				 const vector<Vector3>& nors);
-	HullCollider(const Vector3 origin, const vector<Vector3>& verts,
-				 const vector<Edge>& edges, const vector<Vector3>& nors);
+	HullCollider(const vector<HE::HVertex>& verts,
+				 const vector<HE::FaceInit>& faces,
+				 const Vector3 origin = Vector3Zero());
+	HullCollider(const HullCollider& copy);
 
 	/** \copydoc Collider::GetTransformed() */
-	[[nodiscard]] vector<Col_Sptr>
-	GetTransformed(const Matrix trans) const override;
+	void GetTransformed(const Matrix trans,
+						vector<Col_Sptr>& out) const override;
 	/** \copydoc Collider::GetNormals() */
 	void GetNormals(vector<Vector3>& out) const override;
 	/** \copydoc Collider::GetProjection() */
@@ -126,9 +127,11 @@ class HullCollider : public Collider
 	void DebugDraw(const Matrix& transform, const Color& col) const override;
 
 	private:
-	vector<Edge> edges;
-	vector<Vector3> vertices;
-	vector<Vector3> normals;
+	void GetFaceInits(vector<HE::FaceInit>& out);
+
+	vector<HE::HEdge> edges;
+	vector<HE::HVertex> vertices;
+	vector<HE::HFace> faces;
 };
 
 /** Creates a rectangular convex hull collider centered on (0, 0, 0). */

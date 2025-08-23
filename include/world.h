@@ -30,7 +30,7 @@ class World
 
 	// NOTE: Remove when creating physics objects from meshes is properly
 	// implemented.
-	void DebugAddStairObj();
+	void DebugAddStairObj(Vector3 pos);
 };
 void DrawGrid(const float lineLength, const int count);
 

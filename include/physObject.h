@@ -9,8 +9,6 @@
 namespace phys
 {
 
-extern vector<Shader> shaders;
-
 /**
  * Object that interacts with the physics simulation systems. Has a collider for
  * collision detection and resolution, and a mesh and material for rendering.
@@ -94,13 +92,13 @@ class PhysObject
 
 	/** \returns A pointer to the object's physics Collider. */
 	[[nodiscard]] Col_Sptr GetCollider() const { return this->collider; }
-	[[nodiscard]] vector<Col_Sptr> GetColliderT() const
+	void GetColliderT(vector<Col_Sptr>& out) const
 	{
-		return collider->GetTransformed(this->GetTransformM());
+		collider->GetTransformed(this->GetTransformM(), out);
 	}
-	[[nodiscard]] vector<Col_Sptr> GetColliderT(Matrix trans) const
+	void GetColliderT(Matrix trans, vector<Col_Sptr>& out) const
 	{
-		return collider->GetTransformed(trans);
+		collider->GetTransformed(trans, out);
 	}
 	/** Sets the shader to use when drawing the object. */
 	void SetShader(const Shader& newShader)
