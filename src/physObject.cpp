@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <iostream>
 #include <optional>
 #include <raylib.h>
 #include <raymath.h>
@@ -73,7 +74,9 @@ std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 	}
 #ifndef NDEBUG
 	//Draw both objects' colliders in the local coordinate space of object 1
+	std::cout << "drawing object1\n";
 	obj1.GetCollider()->DebugDraw(MatrixIdentity(), {255, 255, 255, 255});
+	std::cout << "drawing object2\n";
 	obj2.GetCollider()->DebugDraw(obj2.GetTransformM() *
 									  MatrixInvert(obj1.GetTransformM()),
 								  {255, 255, 255, 255});

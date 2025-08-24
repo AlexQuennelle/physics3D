@@ -21,6 +21,7 @@ make
 cd ..
 if [[ "${buildType^}" = "Debug" ]]; then
 	cd bin
-	wezterm start --cwd . --always-new-process --class floating ./$(basename $(dirname $PWD))
+	wezterm start --cwd . --always-new-process --class floating gdb -ex run ./$(basename $(dirname $PWD))
+	# wezterm start --cwd . --always-new-process --class floating ./$(basename $(dirname $PWD))
 fi
 exit

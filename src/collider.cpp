@@ -1,7 +1,7 @@
 #include "collider.h"
 #include "halfEdge.h"
 
-#include <algorithm>
+#include <csignal>
 #include <cstdint>
 #include <iterator>
 #include <limits>
@@ -19,6 +19,8 @@
 #include "utils.h"
 #endif // VERBOSELOG_COL
 #endif // !NDEBUG
+
+#define breakpoint raise(SIGTRAP);
 
 namespace phys
 {
@@ -48,23 +50,20 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 						   const vector<HE::FaceInit>& faces,
 						   const Vector3 origin)
 {
+	std::cout << "new hull\n";
 	this->origin = origin;
-	//this->vertices.insert(this->vertices.end(), verts.begin(), verts.end());
 	for (const auto vert : verts)
 	{
 		this->vertices.push_back(vert);
-		this->vertices[this->vertices.size() - 1].edgeArr = &this->edges;
+		this->vertices.back().edgeArr = &this->edges;
 	}
-	//this->normals.insert(this->normals.end(), nors.begin(), nors.end());
-	//this->edges.insert(this->edges.end(), edges.begin(), edges.end());
-	//this->origin = origin;
 	using vertPair = std::pair<uint8_t, uint8_t>;
 	std::map<vertPair, HE::HEdge> tmpEdges;
 	uint8_t anchor{0};
 	for (auto face : faces)
 	{
 		this->faces.emplace_back(face.normal);
-		this->faces[this->faces.size() - 1].edgeArr = &this->edges;
+		this->faces.back().edgeArr = &this->edges;
 		this->edges.resize(this->edges.size() + face.indices.size());
 		for (int i{0}; i < face.indices.size(); i++)
 		{
@@ -93,25 +92,26 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 					std::distance(tmpEdges.begin(), tmpEdges.find(pair));
 			}
 		}
-		this->faces[this->faces.size() - 1].edgeID = anchor;
+		this->faces.back().edgeID = anchor;
 		anchor += face.indices.size();
 	}
 	this->edges.reserve(tmpEdges.size());
-	for (auto& edge : tmpEdges)
+	for (auto edge : tmpEdges)
 	{
 		this->edges.push_back(edge.second);
-		//if (this->edges[this->edges.size() - 1].Vertex()->Edge() == nullptr)
-		//{
-		this->edges[this->edges.size() - 1].Vertex()->edgeID =
-			this->edges.size() - 1;
-		//}
+		this->edges.back().Vertex()->edgeID = this->edges.size() - 1;
 	}
+	for (auto& edge : this->edges)
+	{
+		edge.vertArr = &this->vertices;
+		edge.edgeArr = &this->edges;
+		edge.faceArr = &this->faces;
+	}
+	//breakpoint
 }
 HullCollider::HullCollider(const HullCollider& copy)
 {
-	//std::ranges::copy(copy.vertices,this->vertices.begin());
-	//std::ranges::copy(copy.edges,this->edges.begin());
-	//std::ranges::copy(copy.faces,this->faces.begin());
+	std::cout << "copied hull\n";
 	this->vertices.reserve(copy.vertices.size());
 	for (auto vert : copy.vertices)
 	{
@@ -136,21 +136,21 @@ HullCollider::HullCollider(const HullCollider& copy)
 void HullCollider::GetTransformed(const Matrix trans,
 								  vector<Col_Sptr>& out) const
 {
-	auto newCol = *this;
-	for (int i{0}; i < newCol.vertices.size(); i++)
+	std::cout << "Getting transformed\n";
+	auto newCol = std::make_shared<HullCollider>(HullCollider(*this));
+	for (int i{0}; i < newCol->vertices.size(); i++)
 	{
-		newCol.vertices[i] = newCol.vertices[i] * trans;
+		newCol->vertices[i] = newCol->vertices[i] * trans;
 	}
-	for (int i{0}; i < newCol.faces.size(); i++)
+	for (int i{0}; i < newCol->faces.size(); i++)
 	{
-		newCol.faces[i].normal = newCol.faces[i].normal * trans;
+		newCol->faces[i].normal = newCol->faces[i].normal * trans;
 	}
-	newCol.origin = newCol.origin * trans;
-	out.push_back(std::make_shared<HullCollider>(newCol));
+	newCol->origin = newCol->origin * trans;
+	out.push_back(newCol);
 }
 void HullCollider::GetNormals(vector<Vector3>& out) const
 {
-	//out.insert(out.end(), this->normals.begin(), this->normals.end());
 	for (const auto face : this->faces)
 	{
 		out.push_back(face.normal);
@@ -191,8 +191,8 @@ void HullCollider::DebugDraw(const Matrix& transform, const Color& col) const
 {
 	for (const auto& edge : this->edges)
 	{
+		std::cout << edge.Vertex()->Vec() << '\n';
 		Vector3 start = edge.Vertex()->Vec() * transform;
-		//Vector3 end = edge.TailVert()->Vec() * transform;
 		Vector3 end = edge.Twin()->Vertex()->Vec() * transform;
 		DrawLine3D(start, end, col);
 	}

@@ -12,7 +12,7 @@ if("${CMAKE_GENERATOR}" STREQUAL "Visual Studio 17 2022")
 else()
     # set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 endif()
-add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O3;-ffast-math>")
+# add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O3;-ffast-math>")
 
 # Change this to match the name of the current folder
 project(
