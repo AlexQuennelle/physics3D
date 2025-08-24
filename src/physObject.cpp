@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <cstdlib>
-#include <iostream>
 #include <optional>
 #include <raylib.h>
 #include <raymath.h>
@@ -33,12 +32,6 @@ std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 						   std::dynamic_pointer_cast<HullCollider>(col2), nors);
 			CheckFaceNors(col1, col2);
 			CheckFaceNors(col2, col1);
-			//#ifndef NDEBUG
-			//			for (auto nor : nors)
-			//			{
-			//				DrawLine3D({0.0f, 0.0f, 0.0f}, nor, WHITE);
-			//			}
-			//#endif // !NDEBUG
 			bool hit = true;
 			for (const auto nor : nors)
 			{
@@ -74,9 +67,7 @@ std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 	}
 #ifndef NDEBUG
 	//Draw both objects' colliders in the local coordinate space of object 1
-	std::cout << "drawing object1\n";
 	obj1.GetCollider()->DebugDraw(MatrixIdentity(), {255, 255, 255, 255});
-	std::cout << "drawing object2\n";
 	obj2.GetCollider()->DebugDraw(obj2.GetTransformM() *
 									  MatrixInvert(obj1.GetTransformM()),
 								  {255, 255, 255, 255});

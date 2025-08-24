@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <ostream>
 #include <raylib.h>
 #include <vector>
 
@@ -13,10 +14,6 @@ struct HFace;
 
 struct HVertex
 {
-	//Vertex(float x, float y, float z, std::vector<Edge>* arr)
-	//	: x(x), y(y), z(z), edgeArr(arr) {};
-	//Vertex(Vector3 pos, std::vector<Edge>* arr)
-	//	: x(pos.x), y(pos.y), z(pos.z), edgeArr(arr) {};
 	float x;
 	float y;
 	float z;
@@ -29,9 +26,9 @@ struct HVertex
 	{
 		this->x =
 			mat.m0 * this->x + mat.m4 * this->y + mat.m8 * this->z + mat.m12;
-		this->x =
+		this->y =
 			mat.m1 * this->x + mat.m5 * this->y + mat.m9 * this->z + mat.m13;
-		this->x =
+		this->z =
 			mat.m2 * this->x + mat.m6 * this->y + mat.m10 * this->z + mat.m14;
 		return *this;
 	};
@@ -45,9 +42,6 @@ struct HVertex
 
 struct HEdge
 {
-	//Edge(std::vector<Vertex>* verts, std::vector<Edge>* edges,
-	//	 std::vector<Face>* faces)
-	//	: vertArr(verts), edgeArr(edges), faceArr(faces) {};
 	uint8_t vertID{0};
 	uint8_t twinID{0};
 	uint8_t nextID{0};
@@ -66,7 +60,6 @@ struct HEdge
 struct HFace
 {
 
-	//Face(Vector3 nor, std::vector<Edge>* arr) : normal(nor), edgeArr(arr) {};
 	HFace(const Vector3 nor) : normal(nor) {};
 	Vector3 normal;
 	uint8_t edgeID{0};
@@ -82,5 +75,11 @@ struct FaceInit
 	Vector3 normal;
 	std::vector<uint8_t> indices;
 };
+
+#ifndef NDEBUG
+std::ostream& operator<<(std::ostream& ostr, HVertex vert);
+std::ostream& operator<<(std::ostream& ostr, HEdge edge);
+std::ostream& operator<<(std::ostream& ostr, HFace face);
+#endif // !NDEBUG
 
 } //namespace HE

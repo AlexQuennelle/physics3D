@@ -1,44 +1,43 @@
 #include "halfEdge.h"
-#include <iostream>
+
+#include <ostream>
 
 namespace HE
 {
 
 HEdge* HVertex::Edge() const { return &(*edgeArr)[this->edgeID]; }
 
-HVertex* HEdge::Vertex() const
-{
-	if (this->vertArr == nullptr)
-	{
-		std::cout << "vertArr is null in edge\n";
-	}
-	return &(*vertArr)[this->vertID];
-}
-HEdge* HEdge::Twin() const
-{
-	if (this->edgeArr == nullptr)
-	{
-		std::cout << "edgeArr is null in edge\n";
-	}
-	return &(*edgeArr)[this->twinID];
-}
-HEdge* HEdge::Next() const
-{
-	if (this->edgeArr == nullptr)
-	{
-		std::cout << "edgeArr is null in edge\n";
-	}
-	return &(*edgeArr)[this->nextID];
-}
-HFace* HEdge::Face() const
-{
-	if (this->faceArr == nullptr)
-	{
-		std::cout << "faceArr is null in edge\n";
-	}
-	return &(*faceArr)[this->faceID];
-}
+HVertex* HEdge::Vertex() const { return &(*vertArr)[this->vertID]; }
+HEdge* HEdge::Twin() const { return &(*edgeArr)[this->twinID]; }
+HEdge* HEdge::Next() const { return &(*edgeArr)[this->nextID]; }
+HFace* HEdge::Face() const { return &(*faceArr)[this->faceID]; }
 
 HEdge* HFace::Edge() const { return &(*edgeArr)[this->edgeID]; }
+
+#ifndef NDEBUG
+std::ostream& operator<<(std::ostream& ostr, HVertex vert)
+{
+	ostr << '(' << vert.x << ", " << vert.y << ", " << vert.z << ')';
+	return ostr;
+}
+std::ostream& operator<<(std::ostream& ostr, HEdge edge)
+{
+	ostr << *edge.Vertex() << "-->" << *edge.Twin()->Vertex();
+	return ostr;
+}
+std::ostream& operator<<(std::ostream& ostr, HFace face)
+{
+	ostr << '(' << face.normal.x << ", " << face.normal.y << ", "
+		 << face.normal.z << ")\t";
+	auto* vert = face.Edge();
+	do
+	{
+		vert = vert->Next();
+		ostr << *vert->Vertex();
+	}
+	while (*face.Edge()->Vertex() != *vert->Vertex());
+	return ostr;
+}
+#endif // !NDEBUG
 
 } //namespace HE
