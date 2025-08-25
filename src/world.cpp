@@ -36,7 +36,7 @@ World::World() : imguiIO(ImGui::GetIO())
 		 .projection = 0});
 
 	this->objects.push_back(
-		CreateBoxObject({2.0f, 0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}));
+		CreateBoxObject({2.0f, 0.2f, -0.5f}, {1.0f, 1.0f, 1.0f}));
 	//CreateBoxObject({2.0f, 0.0f, 0.5f}, {1.0f, 1.0f, 1.0f}));
 	//this->objects[0].Rotate(QuaternionFromEuler(0.0f, 45.0f * DEG2RAD, 0.0f));
 	this->objects.push_back(
@@ -65,7 +65,7 @@ void World::Update()
 	ClearBackground({100, 149, 237, 255});
 	BeginMode3D(cam);
 	//objects[1].Rotate(
-	//	QuaternionFromAxisAngle({0.0f, 1.0f, 0.0f}, 1.0f * deltaTime));
+	//	QuaternionFromAxisAngle({1.0f, 0.0f, 0.0f}, 1.0f * deltaTime));
 	for (auto obj : this->objects)
 	{
 		obj.Update();

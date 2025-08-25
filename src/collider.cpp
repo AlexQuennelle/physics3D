@@ -1,6 +1,7 @@
 #include "collider.h"
 #include "halfEdge.h"
 
+#include <csignal>
 #include <cstdint>
 #include <iterator>
 #include <limits>
@@ -176,7 +177,7 @@ Range HullCollider::GetProjection(const Vector3 nor) const
 }
 Vector3 HullCollider::GetSupportPoint(const Vector3& axis) const
 {
-	// TODO: Potentially clean up
+	// NOTE: Potentially clean up
 	Vector3 support{};
 	float supportVal{-1.0f};
 	for (const auto vert : this->vertices)
@@ -201,7 +202,6 @@ void HullCollider::DebugDraw(const Matrix& transform, const Color& col) const
 	}
 	DrawSphere(this->origin * transform, 0.025f, col);
 }
-void HullCollider::GetFaceInits(vector<HE::FaceInit>& out) {}
 
 std::shared_ptr<HullCollider> CreateBoxCollider(Matrix transform)
 {
@@ -221,12 +221,9 @@ std::shared_ptr<HullCollider> CreateBoxCollider(Matrix transform)
 	};
 	vector<HE::HVertex> newVerts;
 	static const vector<Vector3> nors{
-		{.x = 1.0f, .y = 0.0f, .z = 0.0f},
-		{.x = -1.0f, .y = 0.0f, .z = 0.0f},
-		{.x = 0.0f, .y = 1.0f, .z = 0.0f},
-		{.x = 0.0f, .y = -1.0f, .z = 0.0f},
-		{.x = 0.0f, .y = 0.0f, .z = 1.0f},
-		{.x = 0.0f, .y = 0.0f, .z = -1.0f},
+		{.x = 1.0f, .y = 0.0f, .z = 0.0f}, {.x = -1.0f, .y = 0.0f, .z = 0.0f},
+		{.x = 0.0f, .y = 1.0f, .z = 0.0f}, {.x = 0.0f, .y = -1.0f, .z = 0.0f},
+		{.x = 0.0f, .y = 0.0f, .z = 1.0f}, {.x = 0.0f, .y = 0.0f, .z = -1.0f},
 	};
 
 	newVerts.reserve(verts.size());

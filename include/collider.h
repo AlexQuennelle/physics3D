@@ -69,7 +69,13 @@ class Collider
 
 	virtual void DebugDraw(const Matrix& /*unused*/,
 						   const Color& /*unused*/) const {};
-	friend void CheckFaceNors(Col_Sptr col1, Col_Sptr col2);
+
+	struct FaceHit
+	{
+		uint8_t id;
+		float penetration;
+	};
+	friend FaceHit CheckFaceNors(Col_Sptr col1, Col_Sptr col2);
 
 	protected:
 	Vector3 origin{0.0f, 0.0f, 0.0f};
@@ -126,9 +132,9 @@ class HullCollider : public Collider
 
 	void DebugDraw(const Matrix& transform, const Color& col) const override;
 
-	private:
-	void GetFaceInits(vector<HE::FaceInit>& out);
+	friend FaceHit CheckFaceNors(Col_Sptr col1, Col_Sptr col2);
 
+	private:
 	vector<HE::HEdge> edges;
 	vector<HE::HVertex> vertices;
 	vector<HE::HFace> faces;

@@ -24,12 +24,13 @@ struct HVertex
 
 	HVertex& operator*(const Matrix mat)
 	{
-		this->x =
-			mat.m0 * this->x + mat.m4 * this->y + mat.m8 * this->z + mat.m12;
-		this->y =
-			mat.m1 * this->x + mat.m5 * this->y + mat.m9 * this->z + mat.m13;
-		this->z =
-			mat.m2 * this->x + mat.m6 * this->y + mat.m10 * this->z + mat.m14;
+		Vector3 result;
+		result.x = mat.m0 * x + mat.m4 * y + mat.m8 * z + mat.m12;
+		result.y = mat.m1 * x + mat.m5 * y + mat.m9 * z + mat.m13;
+		result.z = mat.m2 * x + mat.m6 * y + mat.m10 * z + mat.m14;
+		this->x = result.x;
+		this->y = result.y;
+		this->z = result.z;
 		return *this;
 	};
 	bool operator==(const HVertex& comp) const
