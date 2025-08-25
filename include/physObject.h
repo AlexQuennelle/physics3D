@@ -119,9 +119,6 @@ class PhysObject
 
 	Col_Sptr collider;
 	Mesh mesh;
-
-	//debug stuff
-	int ColLoc;
 };
 
 // NOTE: This struct needs to be reworked
@@ -136,6 +133,7 @@ struct HitObj
 
 std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 									 const PhysObject& obj2);
+std::optional<HitObj> CheckRaycast(const Raycast ray, const PhysObject& obj);
 
 PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims);
 

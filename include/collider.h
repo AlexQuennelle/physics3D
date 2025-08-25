@@ -140,6 +140,12 @@ class HullCollider : public Collider
 	vector<HE::HFace> faces;
 };
 
+struct Raycast
+{
+	Vector3 pos;
+	Vector3 dir;
+};
+
 /** Creates a rectangular convex hull collider centered on (0, 0, 0). */
 std::shared_ptr<HullCollider> CreateBoxCollider(Matrix transform);
 

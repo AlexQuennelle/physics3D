@@ -90,6 +90,14 @@ std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 	}
 	return {};
 }
+std::optional<HitObj> CheckRaycast(const Raycast ray, const PhysObject &obj)
+{
+	// TODO: Implement ray/polygon intersection
+	vector<Col_Sptr> colliders;
+	obj.GetCollider()->GetTransformed(obj.GetTransformM(), colliders);
+
+	return {};
+}
 Collider::FaceHit CheckFaceNors(Col_Sptr col1, Col_Sptr col2)
 {
 	Collider::FaceHit hit{};
