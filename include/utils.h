@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <raylib.h>
+#include <string>
 
 namespace phys
 {

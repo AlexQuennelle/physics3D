@@ -1,5 +1,4 @@
 [Bb]uild/
 [Bb]uild.web/
 [Bb]in/
-*.bat
 .cache/
