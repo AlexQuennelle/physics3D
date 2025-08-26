@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <raylib.h>
 #include <raymath.h>
 #include <vector>
@@ -74,6 +75,7 @@ class Collider
 	{
 		uint8_t id;
 		float penetration;
+		Vector3 suppport;
 	};
 	friend FaceHit CheckFaceNors(Col_Sptr col1, Col_Sptr col2);
 
@@ -125,6 +127,10 @@ class HullCollider : public Collider
 	HullCollider operator*(const Matrix& mat);
 
 	[[nodiscard]] Vector3 GetSupportPoint(const Vector3& axis) const override;
+	[[nodiscard]] const HE::HFace& GetFace(const uint8_t i) const
+	{
+		return faces[i];
+	}
 
 	friend void GetEdgeCrosses(const std::shared_ptr<HullCollider> col1,
 							   const std::shared_ptr<HullCollider> col2,

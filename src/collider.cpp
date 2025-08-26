@@ -1,7 +1,6 @@
 #include "collider.h"
 #include "halfEdge.h"
 
-#include <csignal>
 #include <cstdint>
 #include <iterator>
 #include <limits>
@@ -12,14 +11,15 @@
 #include <utility>
 #include <vector>
 #ifndef NDEBUG
+#include <csignal>
 //#define VERBOSELOG_COL
 #include <iostream>
 #include <ostream>
 #ifdef VERBOSELOG_COL
 #include "utils.h"
 #endif // VERBOSELOG_COL
-#endif // !NDEBUG
 #define breakpoint raise(SIGTRAP);
+#endif // !NDEBUG
 
 namespace phys
 {

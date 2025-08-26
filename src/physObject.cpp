@@ -32,7 +32,27 @@ std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 			GetEdgeCrosses(std::dynamic_pointer_cast<HullCollider>(col1),
 						   std::dynamic_pointer_cast<HullCollider>(col2), nors);
 			auto faces1 = CheckFaceNors(col1, col2);
+			if (faces1.penetration <= 0)
+				break;
 			auto faces2 = CheckFaceNors(col2, col1);
+			if (faces2.penetration <= 0)
+				break;
+			auto hull1 = std::dynamic_pointer_cast<HullCollider>(col1);
+			auto hull2 = std::dynamic_pointer_cast<HullCollider>(col2);
+			if (faces1.penetration < faces2.penetration)
+			{
+				DrawLine3D(faces1.suppport,
+						   faces1.suppport + (hull1->GetFace(faces1.id).normal *
+											  faces1.penetration),
+						   RED);
+			}
+			else
+			{
+				DrawLine3D(faces2.suppport,
+						   faces2.suppport + (hull2->GetFace(faces2.id).normal *
+											  faces2.penetration),
+						   RED);
+			}
 			bool hit = true;
 			for (const auto nor : nors)
 			{
@@ -90,7 +110,7 @@ std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 	}
 	return {};
 }
-std::optional<HitObj> CheckRaycast(const Raycast ray, const PhysObject &obj)
+std::optional<HitObj> CheckRaycast(const Raycast ray, const PhysObject& obj)
 {
 	// TODO: Implement ray/polygon intersection
 	vector<Col_Sptr> colliders;
@@ -117,8 +137,9 @@ Collider::FaceHit CheckFaceNors(Col_Sptr col1, Col_Sptr col2)
 			{
 				hit.penetration = penertration;
 				hit.id = i;
+				hit.suppport = support;
 			}
-			DrawLine3D(support, support + (nor * penertration), RED);
+			//DrawLine3D(support, support + (nor * penertration), RED);
 		}
 #ifndef NDEBUG
 		Color color = {
