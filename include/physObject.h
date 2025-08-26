@@ -133,6 +133,7 @@ struct HitObj
 
 std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 									 const PhysObject& obj2);
+Raycast GetMouseRaycast(const Camera cam);
 std::optional<HitObj> CheckRaycast(const Raycast ray, const PhysObject& obj);
 
 PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims);

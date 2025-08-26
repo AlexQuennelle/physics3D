@@ -3,15 +3,39 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
 #include <utility>
+#define Float static_cast<float>
 
 namespace phys
 {
+
+Raycast GetMouseRaycast(const Camera cam)
+{
+	Vector2 mousePos = GetMousePosition();
+	Vector4 MouseNDC1{mousePos.x, mousePos.y, 0.0f, 1.0f};
+	Vector4 MouseNDC2{mousePos.x, mousePos.y, 1.0f, 1.0f};
+	auto projMat = MatrixPerspective(cam.fovy * DEG2RAD,
+									 (static_cast<float>(GetScreenWidth()) /
+									  static_cast<float>(GetScreenHeight())),
+									 0.01f, 1000.0f);
+	auto viewMat = GetCameraMatrix(cam);
+	auto mat = MatrixInvert(projMat * viewMat);
+	Vector4 worldPos1 = MouseNDC1 * mat;
+	worldPos1 = worldPos1 / worldPos1.w;
+	Vector4 worldPos2 = MouseNDC2 * mat;
+	worldPos2 = worldPos2 / worldPos2.w;
+	auto rayDir = Vector3Normalize(
+		Vector3Subtract({worldPos2.x, worldPos2.y, worldPos2.z},
+						{worldPos1.x, worldPos1.y, worldPos1.z}));
+	std::cout << rayDir << '\n';
+	return {.pos = cam.position, .dir = rayDir};
+}
 
 std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 									 const PhysObject& obj2)
@@ -115,6 +139,26 @@ std::optional<HitObj> CheckRaycast(const Raycast ray, const PhysObject& obj)
 	// TODO: Implement ray/polygon intersection
 	vector<Col_Sptr> colliders;
 	obj.GetCollider()->GetTransformed(obj.GetTransformM(), colliders);
+	for (auto collider : colliders)
+	{
+		auto hull = std::dynamic_pointer_cast<HullCollider>(collider);
+		for (int i{0}; i < hull->FaceCount(); i++)
+		{
+			auto& face = hull->GetFace(i);
+			auto hit =
+				Vector3DotProduct((face.Edge()->Vertex()->Vec() - ray.pos),
+								  face.normal) /
+				Vector3DotProduct(ray.dir, face.normal);
+			bool inPoly{false};
+			if (hit >= 0 && inPoly)
+			{
+				auto hitPos = ray.pos + (ray.dir * hit);
+				DrawSphere(hitPos, 0.025, GREEN);
+			}
+			else
+				continue;
+		}
+	}
 
 	return {};
 }

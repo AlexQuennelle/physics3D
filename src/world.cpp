@@ -139,6 +139,13 @@ void World::ProcessInput()
 					{0.0f, 1.0f, 0.0f}),
 				dAngle);
 		}
+		else if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
+		{
+			for (auto& obj : this->objects)
+			{
+				auto hit = CheckRaycast(GetMouseRaycast(this->cam), obj);
+			}
+		}
 		Vector3 camMove = cam.target - cam.position;
 		camMove = Vector3Scale(camMove, GetMouseWheelMove() * 0.1f);
 		cam.position = Vector3Transform(

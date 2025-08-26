@@ -131,6 +131,7 @@ class HullCollider : public Collider
 	{
 		return faces[i];
 	}
+	[[nodiscard]] uint8_t FaceCount() const { return this->faces.size(); }
 
 	friend void GetEdgeCrosses(const std::shared_ptr<HullCollider> col1,
 							   const std::shared_ptr<HullCollider> col2,
