@@ -1,11 +1,8 @@
 #include "physObject.h"
 #include "collider.h"
-#include "imgui.h"
 
-#include <csignal>
 #include <cstdint>
 #include <cstdlib>
-#include <iostream>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -200,9 +197,11 @@ std::optional<RaycastHit> CheckRaycast(const Ray ray, PhysObject& obj)
 Collider::FaceHit CheckFaceNors(Col_Sptr col1, Col_Sptr col2)
 {
 	Collider::FaceHit hit{};
+#ifndef NDEBUG
 	vector<Vector3> nors;
 	col1->GetNormals(nors);
 	srand(static_cast<int>(nors[0].x + nors[1].y));
+#endif // !NDEBUG
 	auto hull1 = std::dynamic_pointer_cast<HullCollider>(col1);
 	for (int i{0}; i < hull1->faces.size(); i++)
 	{
@@ -233,6 +232,24 @@ Collider::FaceHit CheckFaceNors(Col_Sptr col1, Col_Sptr col2)
 #endif // !NDEBUG
 	}
 	return hit;
+}
+Collider::EdgeHit CheckEdgeNors(Col_Sptr col1, Col_Sptr col2)
+{
+	Collider::EdgeHit hit{};
+	vector<Vector3> nors;
+	auto hull1 = std::dynamic_pointer_cast<HullCollider>(col1);
+	auto hull2 = std::dynamic_pointer_cast<HullCollider>(col2);
+	//GetEdgeCrosses(hull1, hull2, nors);
+	for (int i{0}; i < hull1->edges.size(); i++)
+	{
+		auto edge1 = hull1->edges[i];
+		for (int j{0}; j < hull2->edges.size(); j++)
+		{
+			auto edge2 = hull2->edges[j];
+			auto nor =
+				Vector3Normalize(Vector3CrossProduct(edge1.Dir(), edge2.Dir()));
+		}
+	}
 }
 
 PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Col_Sptr col)
@@ -298,9 +315,7 @@ PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)
 	return {pos, mesh, col, shader};
 }
 
-void DisplayObjectInfo(PhysObject& obj)
-{
-}
+void DisplayObjectInfo(PhysObject& obj) {}
 
 #ifndef NDEBUG
 ostream& operator<<(ostream& ostr, HitObj& hit)

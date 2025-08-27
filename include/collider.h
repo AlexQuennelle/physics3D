@@ -4,7 +4,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <optional>
 #include <raylib.h>
 #include <raymath.h>
 #include <vector>
@@ -78,7 +77,15 @@ class Collider
 		float penetration;
 		Vector3 suppport;
 	};
+	struct EdgeHit
+	{
+		uint8_t id;
+		float penetration;
+		Vector3 support;
+		Vector3 normal;
+	};
 	friend FaceHit CheckFaceNors(Col_Sptr col1, Col_Sptr col2);
+	friend EdgeHit CheckEdgeNors(Col_Sptr col1, Col_Sptr col2);
 
 	protected:
 	Vector3 origin{0.0f, 0.0f, 0.0f};
@@ -141,6 +148,7 @@ class HullCollider : public Collider
 	void DebugDraw(const Matrix& transform, const Color& col) const override;
 
 	friend FaceHit CheckFaceNors(Col_Sptr col1, Col_Sptr col2);
+	friend EdgeHit CheckEdgeNors(Col_Sptr col1, Col_Sptr col2);
 
 	private:
 	vector<HE::HEdge> edges;

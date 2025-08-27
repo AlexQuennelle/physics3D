@@ -33,16 +33,15 @@ void GetEdgeCrosses(const std::shared_ptr<HullCollider> col1,
 					const std::shared_ptr<HullCollider> col2,
 					vector<Vector3>& out)
 {
-	// TODO: Rework for HE structure
-	//for (auto edge1 : col1->edges)
-	//{
-	//	Vector3 axis1 = col1->vertices[edge1.a] - col1->vertices[edge1.b];
-	//	for (auto edge2 : col2->edges)
-	//	{
-	//		Vector3 axis2 = col2->vertices[edge2.a] - col2->vertices[edge2.b];
-	//		out.push_back(Vector3Normalize(Vector3CrossProduct(axis1, axis2)));
-	//	}
-	//}
+	// TODO: eliminate duplicates
+	for (auto edge1 : col1->edges)
+	{
+		for (auto edge2 : col2->edges)
+		{
+			out.push_back(Vector3Normalize(
+				Vector3CrossProduct(edge1.Dir(), edge2.Dir())));
+		}
+	}
 }
 
 HullCollider::HullCollider(const vector<HE::HVertex>& verts,
@@ -278,7 +277,7 @@ void CompoundCollider::GetNormals(vector<Vector3>& out) const
 		col->GetNormals(out);
 	}
 }
-Vector3 CompoundCollider::GetSupportPoint(const Vector3& axis) const
+Vector3 CompoundCollider::GetSupportPoint(const Vector3&  /*axis*/) const
 {
 	return {0.0f, 0.0f, 0.0f};
 }
