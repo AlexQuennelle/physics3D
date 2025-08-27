@@ -24,6 +24,7 @@ class Collider;
 using Col_Sptr = std::shared_ptr<Collider>;
 
 struct HitObj;
+struct RaycastHit;
 /** Type representing a range of float values between a min and a max value. */
 struct Range
 {

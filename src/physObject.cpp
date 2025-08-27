@@ -1,41 +1,21 @@
 #include "physObject.h"
 #include "collider.h"
+#include "imgui.h"
 
+#include <csignal>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
 #include <utility>
-#define Float static_cast<float>
 
 namespace phys
 {
-
-Raycast GetMouseRaycast(const Camera cam)
-{
-	Vector2 mousePos = GetMousePosition();
-	Vector4 MouseNDC1{mousePos.x, mousePos.y, 0.0f, 1.0f};
-	Vector4 MouseNDC2{mousePos.x, mousePos.y, 1.0f, 1.0f};
-	auto projMat = MatrixPerspective(cam.fovy * DEG2RAD,
-									 (static_cast<float>(GetScreenWidth()) /
-									  static_cast<float>(GetScreenHeight())),
-									 0.01f, 1000.0f);
-	auto viewMat = GetCameraMatrix(cam);
-	auto mat = MatrixInvert(projMat * viewMat);
-	Vector4 worldPos1 = MouseNDC1 * mat;
-	worldPos1 = worldPos1 / worldPos1.w;
-	Vector4 worldPos2 = MouseNDC2 * mat;
-	worldPos2 = worldPos2 / worldPos2.w;
-	auto rayDir = Vector3Normalize(
-		Vector3Subtract({worldPos2.x, worldPos2.y, worldPos2.z},
-						{worldPos1.x, worldPos1.y, worldPos1.z}));
-	std::cout << rayDir << '\n';
-	return {.pos = cam.position, .dir = rayDir};
-}
 
 std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 									 const PhysObject& obj2)
@@ -123,7 +103,7 @@ std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 		obj1.GetCollider()->DebugDraw(obj1.GetTransformM(), {255, 0, 0, 255});
 		obj2.GetCollider()->DebugDraw(obj2.GetTransformM(), {255, 0, 0, 255});
 		HitObj hitObj{
-			.ThisCol = obj1, .OtherCol = obj2, .HitPos = {0.0f, 0.0f, 0.0f}};
+			.HitPos = {0.0f, 0.0f, 0.0f}, .ThisCol = obj1, .OtherCol = obj2};
 		return hitObj;
 	}
 	else
@@ -134,33 +114,88 @@ std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 	}
 	return {};
 }
-std::optional<HitObj> CheckRaycast(const Raycast ray, const PhysObject& obj)
+std::optional<RaycastHit> CheckRaycast(const Ray ray, PhysObject& obj)
 {
-	// TODO: Implement ray/polygon intersection
 	vector<Col_Sptr> colliders;
 	obj.GetCollider()->GetTransformed(obj.GetTransformM(), colliders);
-	for (auto collider : colliders)
+	RaycastHit hitObj{.hitDist = std::numeric_limits<float>::max(),
+					  .hitPos = Vector3Zero(),
+					  .hitObj = obj};
+	bool isHit{false};
+	for (const auto& collider : colliders)
 	{
-		auto hull = std::dynamic_pointer_cast<HullCollider>(collider);
-		for (int i{0}; i < hull->FaceCount(); i++)
+		HullCollider hull = *std::dynamic_pointer_cast<HullCollider>(collider);
+		for (int i{0}; i < hull.FaceCount(); i++)
 		{
-			auto& face = hull->GetFace(i);
-			auto hit =
-				Vector3DotProduct((face.Edge()->Vertex()->Vec() - ray.pos),
+			const auto& face = hull.GetFace(i);
+			if (Vector3DotProduct(face.normal, ray.direction) > 0)
+				continue;
+			float dist =
+				Vector3DotProduct(face.Edge()->Vertex()->Vec() - ray.position,
 								  face.normal) /
-				Vector3DotProduct(ray.dir, face.normal);
-			bool inPoly{false};
-			if (hit >= 0 && inPoly)
+				Vector3DotProduct(ray.direction, face.normal);
+			if (dist >= 0)
 			{
-				auto hitPos = ray.pos + (ray.dir * hit);
-				DrawSphere(hitPos, 0.025, GREEN);
+				auto hitPos = ray.position + (ray.direction * dist);
+				bool inPoly{false};
+				auto* edge = face.Edge();
+				Vector3 xAxis = edge->Dir();
+				Vector3 yAxis = (Vector3CrossProduct(xAxis, face.normal));
+				Vector2 hitPos2D = {Vector3DotProduct(hitPos, xAxis),
+									Vector3DotProduct(hitPos, yAxis)};
+				do
+				{
+					edge = edge->Next();
+					Vector2 point1 = {
+						Vector3DotProduct(edge->Vertex()->Vec(), xAxis),
+						Vector3DotProduct(edge->Vertex()->Vec(), yAxis)};
+					point1 = point1 - hitPos2D;
+					Vector2 point2 = {
+						Vector3DotProduct(edge->Next()->Vertex()->Vec(), xAxis),
+						Vector3DotProduct(edge->Next()->Vertex()->Vec(),
+										  yAxis)};
+					point2 = point2 - hitPos2D;
+					if (point1.x < 0 && point2.x < 0)
+						continue;
+					bool edgeCross{false};
+					if ((point1.y > 0 && point2.y <= 0) ||
+						(point2.y > 0 && point1.y <= 0))
+					{
+						if (point1.x == point2.x)
+							edgeCross = true;
+						else
+						{
+							float slope =
+								(point1.y - point2.y) / (point1.x - point2.x);
+							edgeCross = -(point1.y / slope) + point1.x >= 0;
+						}
+					}
+					inPoly = inPoly ^ edgeCross;
+				}
+				while (edge->Vertex() != face.Edge()->Vertex());
+				if (inPoly)
+				{
+					isHit |= true;
+					if (dist < hitObj.hitDist)
+					{
+						hitObj.hitDist = dist;
+						hitObj.hitPos = hitPos;
+					}
+				}
 			}
 			else
 				continue;
 		}
 	}
 
-	return {};
+	if (isHit)
+	{
+		return hitObj;
+	}
+	else
+	{
+		return {};
+	}
 }
 Collider::FaceHit CheckFaceNors(Col_Sptr col1, Col_Sptr col2)
 {
@@ -261,6 +296,10 @@ PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims)
 #endif
 
 	return {pos, mesh, col, shader};
+}
+
+void DisplayObjectInfo(PhysObject& obj)
+{
 }
 
 #ifndef NDEBUG

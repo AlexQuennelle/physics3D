@@ -4,6 +4,7 @@
 #include "utils.h"
 
 #include <cassert>
+#include <csignal>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -35,6 +36,7 @@ World::World() : imguiIO(ImGui::GetIO())
 		 .fovy = 45.0f,
 		 .projection = 0});
 
+	std::cout << cam.position << '\n';
 	this->objects.push_back(
 		CreateBoxObject({2.0f, 0.2f, -0.5f}, {1.0f, 1.0f, 1.0f}));
 	//CreateBoxObject({2.0f, 0.0f, 0.5f}, {1.0f, 1.0f, 1.0f}));
@@ -101,11 +103,21 @@ void World::Update()
 	EndMode3D();
 
 	bool open = true;
-	if (ImGui::Begin("Test Window", &open))
+	//open = selectedObj != nullptr;
+	ImGuiWindowFlags flags =
+		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize;
+	if (selectedObj != nullptr)
 	{
-		ImGui::TextUnformatted("This is a test window");
+		if (ImGui::Begin("Selected Object", &open, flags))
+		{
+			// TODO: Add more info
+			Vector3 pos;
+			pos = selectedObj->GetPosition();
+			ImGui::DragFloat3("Object Position", &pos.x, 0.01f);
+			selectedObj->SetPosition(pos);
+		}
+		ImGui::End();
 	}
-	ImGui::End();
 
 	rlImGuiEnd();
 	EndDrawing();
@@ -141,9 +153,21 @@ void World::ProcessInput()
 		}
 		else if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
 		{
+			selectedObj = nullptr;
+			float dist = std::numeric_limits<float>::max();
 			for (auto& obj : this->objects)
 			{
-				auto hit = CheckRaycast(GetMouseRaycast(this->cam), obj);
+				auto hit = CheckRaycast(
+					GetScreenToWorldRay(GetMousePosition(), this->cam), obj);
+				if (hit.has_value())
+				{
+					//DrawSphere(hit->hitPos, 0.025f, GREEN);
+					if (hit->hitDist < dist)
+					{
+						dist = hit->hitDist;
+						selectedObj = &hit->hitObj;
+					}
+				}
 			}
 		}
 		Vector3 camMove = cam.target - cam.position;
@@ -191,10 +215,10 @@ void World::DebugAddStairObj(Vector3 pos)
 		RESOURCES_PATH "shaders/litShader_web.vert",
 		RESOURCES_PATH "shaders/litShader_web.frag"));
 #else
-	this->objects.emplace_back(
-		pos, mesh, std::dynamic_pointer_cast<Collider>(col),
-		RESOURCES_PATH "shaders/litShader.vert",
-		RESOURCES_PATH "shaders/litShader.frag");
+	this->objects.emplace_back(pos, mesh,
+							   std::dynamic_pointer_cast<Collider>(col),
+							   RESOURCES_PATH "shaders/litShader.vert",
+							   RESOURCES_PATH "shaders/litShader.frag");
 #endif // defined ()
 }
 

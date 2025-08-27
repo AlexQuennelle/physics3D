@@ -26,6 +26,8 @@ class World
 	vector<PhysObject> objects;
 	Camera cam;
 
+	PhysObject* selectedObj{nullptr};
+
 	ImGuiIO& imguiIO;
 
 	// NOTE: Remove when creating physics objects from meshes is properly

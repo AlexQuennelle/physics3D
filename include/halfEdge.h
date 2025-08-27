@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <ostream>
 #include <raylib.h>
+#include <raymath.h>
 #include <vector>
 
 namespace HE
@@ -52,6 +53,10 @@ struct HEdge
 	[[nodiscard]] HEdge* Twin() const;
 	[[nodiscard]] HEdge* Next() const;
 	[[nodiscard]] HFace* Face() const;
+	[[nodiscard]] Vector3 Dir() const
+	{
+		return Vector3Normalize(Vertex()->Vec() - Next()->Vertex()->Vec());
+	}
 
 	std::vector<HE::HVertex>* vertArr{nullptr};
 	std::vector<HEdge>* edgeArr{nullptr};

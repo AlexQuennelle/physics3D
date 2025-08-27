@@ -107,6 +107,8 @@ class PhysObject
 		this->material.shader = this->shader;
 	}
 
+	friend void DisplayObjectInfo(PhysObject& obj);
+
 	private:
 	Vector3 velocity;
 
@@ -126,15 +128,20 @@ class PhysObject
 struct HitObj
 {
 	public:
-	PhysObject ThisCol;
-	PhysObject OtherCol;
 	Vector3 HitPos{0.0f, 0.0f, 0.0f};
+	const PhysObject& ThisCol;
+	const PhysObject& OtherCol;
+};
+struct RaycastHit
+{
+	float hitDist;
+	Vector3 hitPos;
+	PhysObject& hitObj;
 };
 
 std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 									 const PhysObject& obj2);
-Raycast GetMouseRaycast(const Camera cam);
-std::optional<HitObj> CheckRaycast(const Raycast ray, const PhysObject& obj);
+std::optional<RaycastHit> CheckRaycast(const Ray ray, PhysObject& obj);
 
 PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims);
 
