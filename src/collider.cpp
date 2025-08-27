@@ -58,7 +58,8 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 	}
 	using vertPair = std::pair<uint8_t, uint8_t>;
 	std::map<vertPair, HE::HEdge> tmpEdges;
-	uint8_t anchor{0};
+	vector<vertPair> anchors;
+	anchors.resize(faces.size());
 	for (auto face : faces)
 	{
 		this->faces.emplace_back(face.normal);
@@ -77,20 +78,22 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 			tmpEdges[pair].faceID = this->faces.size() - 1;
 			tmpEdges[pair].vertID = face.indices[i];
 			tmpEdges[pair].nextID = pair.second;
+			anchors[this->faces.size() - 1] = pair;
 		}
-		this->faces.back().edgeID = anchor;
-		anchor += face.indices.size();
 	}
-	for (auto face : faces)
+	for (int i{0}; i < this->faces.size(); i++)
 	{
-		for (int i{0}; i < face.indices.size(); i++)
+		auto face = faces[i];
+		this->faces[i].edgeID =
+			std::distance(tmpEdges.begin(), tmpEdges.find(anchors[i]));
+		for (int j{0}; j < face.indices.size(); j++)
 		{
-			vertPair pair{face.indices[i],
-						  face.indices[(i + 1) % face.indices.size()]};
-			vertPair pairO{face.indices[(i + 1) % face.indices.size()],
-						   face.indices[i]};
-			vertPair next{face.indices[(i + 1) % face.indices.size()],
-						  face.indices[(i + 2) % face.indices.size()]};
+			vertPair pair{face.indices[j],
+						  face.indices[(j + 1) % face.indices.size()]};
+			vertPair pairO{face.indices[(j + 1) % face.indices.size()],
+						   face.indices[j]};
+			vertPair next{face.indices[(j + 1) % face.indices.size()],
+						  face.indices[(j + 2) % face.indices.size()]};
 			tmpEdges[pair].nextID =
 				std::distance(tmpEdges.begin(), tmpEdges.find(next));
 			if (tmpEdges.contains(pairO))
@@ -248,10 +251,10 @@ std::shared_ptr<HullCollider> CreateBoxCollider(Matrix transform)
 	}
 	faces[0].indices = {1, 5, 7, 3};
 	faces[1].indices = {0, 2, 6, 4};
-	faces[2].indices = {4, 5, 1, 0};
-	faces[3].indices = {3, 7, 6, 2};
-	faces[4].indices = {0, 1, 3, 2};
-	faces[5].indices = {4, 6, 7, 5};
+	faces[2].indices = {3, 7, 6, 2};
+	faces[3].indices = {4, 5, 1, 0};
+	faces[4].indices = {4, 6, 7, 5};
+	faces[5].indices = {0, 1, 3, 2};
 	return std::make_shared<HullCollider>(newVerts, faces,
 										  Vector3Zero() * transform);
 }
