@@ -79,7 +79,8 @@ class Collider
 	};
 	struct EdgeHit
 	{
-		uint8_t id;
+		uint8_t id1;
+		uint8_t id2;
 		float penetration;
 		Vector3 support;
 		Vector3 normal;

@@ -1,14 +1,17 @@
 #include "physObject.h"
 #include "collider.h"
 
+#include <cassert>
 #include <cstdint>
 #include <cstdlib>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <optional>
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
+#include <set>
 #include <utility>
 
 namespace phys
@@ -27,64 +30,41 @@ std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 	{
 		for (const auto& col2 : cols2)
 		{
-			vector<Vector3> nors{obj1.GetPosition() - obj2.GetPosition()};
-			col1->GetNormals(nors);
-			col2->GetNormals(nors);
-			GetEdgeCrosses(std::dynamic_pointer_cast<HullCollider>(col1),
-						   std::dynamic_pointer_cast<HullCollider>(col2), nors);
 			auto faces1 = CheckFaceNors(col1, col2);
 			if (faces1.penetration <= 0)
-				break;
+				continue;
 			auto faces2 = CheckFaceNors(col2, col1);
 			if (faces2.penetration <= 0)
-				break;
-			auto hull1 = std::dynamic_pointer_cast<HullCollider>(col1);
-			auto hull2 = std::dynamic_pointer_cast<HullCollider>(col2);
-			if (faces1.penetration < faces2.penetration)
+				continue;
+			auto edges = CheckEdgeNors(col1, col2);
+			if (edges.penetration <= 0)
+				continue;
+
+			if (edges.penetration < faces1.penetration &&
+				edges.penetration < faces2.penetration)
 			{
+				// Edge collision
+				DrawLine3D(edges.support,
+						   edges.support + (edges.normal * edges.penetration),
+						   GREEN);
+				DrawSphere(edges.support + (edges.normal * edges.penetration),
+						   0.01f, GREEN);
+			}
+			else
+			{
+				// Face collision
+				auto hull1 = std::dynamic_pointer_cast<HullCollider>(col1);
 				DrawLine3D(faces1.suppport,
 						   faces1.suppport + (hull1->GetFace(faces1.id).normal *
 											  faces1.penetration),
 						   RED);
-			}
-			else
-			{
+				auto hull2 = std::dynamic_pointer_cast<HullCollider>(col2);
 				DrawLine3D(faces2.suppport,
 						   faces2.suppport + (hull2->GetFace(faces2.id).normal *
 											  faces2.penetration),
 						   RED);
 			}
-			bool hit = true;
-			for (const auto nor : nors)
-			{
-				Range proj1 = col1->GetProjection(nor);
-				Range proj2 = col2->GetProjection(nor);
-#ifdef VERBOSELOG_COL
-				std::cout << proj1 << '\n';
-				std::cout << proj2 << '\n';
-#endif // !VERBOSELOG_COL
-				bool overlapped =
-					proj1.min <= proj2.max && proj2.min <= proj1.max;
-				if (overlapped)
-				{
-#ifdef VERBOSELOG_COL
-					SetTextColor({0, 255, 0, 255});
-					std::cout << nor << " Hit!\n";
-					ClearStyles();
-#endif // !VERBOSELOG_COL
-				}
-				else
-				{
-#ifdef VERBOSELOG_COL
-					SetTextColor({255, 255, 0, 255});
-					std::cout << "Miss!\n";
-					ClearStyles();
-#endif // !VERBOSELOG_COL
-					hit = false;
-					break;
-				}
-			}
-			collision |= hit;
+			collision |= true;
 		}
 	}
 #ifndef NDEBUG
@@ -196,60 +176,108 @@ std::optional<RaycastHit> CheckRaycast(const Ray ray, PhysObject& obj)
 }
 Collider::FaceHit CheckFaceNors(Col_Sptr col1, Col_Sptr col2)
 {
-	Collider::FaceHit hit{};
 #ifndef NDEBUG
 	vector<Vector3> nors;
 	col1->GetNormals(nors);
 	srand(static_cast<int>(nors[0].x + nors[1].y));
 #endif // !NDEBUG
+	Collider::FaceHit hit{};
+	hit.penetration = std::numeric_limits<float>::max();
 	auto hull1 = std::dynamic_pointer_cast<HullCollider>(col1);
 	for (int i{0}; i < hull1->faces.size(); i++)
 	{
-		auto nor = hull1->faces[i].normal;
-		Range proj1 = col1->GetProjection(nor);
+		Vector3 nor = hull1->faces[i].normal;
 		Vector3 support = col2->GetSupportPoint(Vector3Negate(nor));
-		float penertration = proj1.max - Vector3DotProduct(support, nor);
-		if (penertration > 0 && penertration < (proj1.max - proj1.min))
+		float penetration =
+			Vector3DotProduct(hull1->faces[i].Edge()->Vertex()->Vec(), nor) -
+			Vector3DotProduct(support, nor);
+		if (penetration < hit.penetration)
 		{
-			if (penertration > hit.penetration)
-			{
-				hit.penetration = penertration;
-				hit.id = i;
-				hit.suppport = support;
-			}
-			//DrawLine3D(support, support + (nor * penertration), RED);
+			hit.penetration = penetration;
+			hit.id = i;
+			hit.suppport = support;
 		}
+		//DrawLine3D(support, support + (nor * penertration), RED);
 #ifndef NDEBUG
-		Color color = {
-			static_cast<uint8_t>(rand()),
-			static_cast<uint8_t>(rand()),
-			static_cast<uint8_t>(rand()),
-			255,
-		};
-		DrawLine3D(col1->origin, col1->origin + nor, color);
-		DrawSphere(col1->origin + nor, 0.025f, color);
-		DrawSphere(support, 0.05f, color);
+		//Color color = {
+		//	static_cast<uint8_t>(rand()),
+		//	static_cast<uint8_t>(rand()),
+		//	static_cast<uint8_t>(rand()),
+		//	255,
+		//};
+		//DrawLine3D(col1->origin, col1->origin + nor, color);
+		//DrawSphere(col1->origin + nor, 0.025f, color);
+		//DrawSphere(support, 0.05f, color);
 #endif // !NDEBUG
 	}
 	return hit;
 }
 Collider::EdgeHit CheckEdgeNors(Col_Sptr col1, Col_Sptr col2)
 {
-	Collider::EdgeHit hit{};
+#ifndef NDEBUG
 	vector<Vector3> nors;
+	col1->GetNormals(nors);
+	srand(static_cast<int>(nors[0].x + nors[1].y));
+#endif // !NDEBUG
+	Collider::EdgeHit hit{};
+	hit.penetration = std::numeric_limits<float>::max();
 	auto hull1 = std::dynamic_pointer_cast<HullCollider>(col1);
 	auto hull2 = std::dynamic_pointer_cast<HullCollider>(col2);
-	//GetEdgeCrosses(hull1, hull2, nors);
+	std::set<int> edges1;
+	std::set<int> edges2;
 	for (int i{0}; i < hull1->edges.size(); i++)
 	{
+		if (edges1.contains(i))
+		{
+			continue;
+		}
 		auto edge1 = hull1->edges[i];
+		edges1.insert(i);
+		edges1.insert(hull1->edges[i].twinID);
 		for (int j{0}; j < hull2->edges.size(); j++)
 		{
+			if (edges2.contains(j))
+			{
+				continue;
+			}
 			auto edge2 = hull2->edges[j];
-			auto nor =
+			edges2.insert(i);
+			//edges2.insert(hull2->edges[j].twinID);
+			Vector3 nor =
 				Vector3Normalize(Vector3CrossProduct(edge1.Dir(), edge2.Dir()));
+			Vector3 p =
+				(edge1.Vertex()->Vec() + edge1.Next()->Vertex()->Vec()) / 2;
+			if (Vector3DotProduct(nor, Vector3Normalize(p - hull1->origin)) <=
+				0)
+			{
+				nor = Vector3Negate(nor);
+			}
+			Vector3 support = col2->GetSupportPoint(Vector3Negate(nor));
+			float penetration =
+				col1->GetProjection(nor).max - Vector3DotProduct(support, nor);
+			if (penetration < hit.penetration)
+			{
+				hit.penetration = penetration;
+				hit.id1 = i;
+				hit.id2 = j;
+				hit.support = support;
+				hit.normal = nor;
+			}
+			//DrawLine3D(p, p + (nor * 0.5f), RED);
+#ifndef NDEBUG
+			//Color color = {
+			//	static_cast<uint8_t>(rand()),
+			//	static_cast<uint8_t>(rand()),
+			//	static_cast<uint8_t>(rand()),
+			//	255,
+			//};
+			//DrawLine3D(p, p + nor, color);
+			//DrawSphere(p + nor, 0.025f, color);
+			//DrawSphere(support, 0.05f, color);
+#endif // !NDEBUG
 		}
 	}
+	return hit;
 }
 
 PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Col_Sptr col)

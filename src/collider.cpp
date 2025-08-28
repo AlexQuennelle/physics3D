@@ -55,9 +55,9 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 		this->vertices.push_back(vert);
 		this->vertices.back().edgeArr = &this->edges;
 	}
-	using vertPair = std::pair<uint8_t, uint8_t>;
-	std::map<vertPair, HE::HEdge> tmpEdges;
-	vector<vertPair> anchors;
+	using VertPair = std::pair<uint8_t, uint8_t>;
+	std::map<VertPair, HE::HEdge> tmpEdges;
+	vector<VertPair> anchors;
 	anchors.resize(faces.size());
 	for (auto face : faces)
 	{
@@ -66,7 +66,7 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 		this->faces.reserve(this->faces.size() + face.indices.size());
 		for (int i{0}; i < face.indices.size(); i++)
 		{
-			vertPair pair{face.indices[i],
+			VertPair pair{face.indices[i],
 						  face.indices[(i + 1) % face.indices.size()]};
 			tmpEdges.insert({pair, HE::HEdge()});
 
@@ -87,11 +87,11 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 			std::distance(tmpEdges.begin(), tmpEdges.find(anchors[i]));
 		for (int j{0}; j < face.indices.size(); j++)
 		{
-			vertPair pair{face.indices[j],
+			VertPair pair{face.indices[j],
 						  face.indices[(j + 1) % face.indices.size()]};
-			vertPair pairO{face.indices[(j + 1) % face.indices.size()],
+			VertPair pairO{face.indices[(j + 1) % face.indices.size()],
 						   face.indices[j]};
-			vertPair next{face.indices[(j + 1) % face.indices.size()],
+			VertPair next{face.indices[(j + 1) % face.indices.size()],
 						  face.indices[(j + 2) % face.indices.size()]};
 			tmpEdges[pair].nextID =
 				std::distance(tmpEdges.begin(), tmpEdges.find(next));
