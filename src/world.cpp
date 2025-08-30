@@ -36,24 +36,20 @@ World::World() : imguiIO(ImGui::GetIO())
 		 .fovy = 45.0f,
 		 .projection = 0});
 
-	std::cout << cam.position << '\n';
 	this->objects.push_back(
 		CreateBoxObject({2.0f, 0.2f, -0.5f}, {1.0f, 1.0f, 1.0f}));
 	//CreateBoxObject({2.0f, 0.0f, 0.5f}, {1.0f, 1.0f, 1.0f}));
 	//this->objects[0].Rotate(QuaternionFromEuler(0.0f, 45.0f * DEG2RAD, 0.0f));
-	this->objects.push_back(
-		CreateBoxObject({2.0f, 0.0f, 0.5f}, {1.0f, 1.0f, 1.0f}));
-	//this->DebugAddStairObj({2.0f, 0.0f, 0.5f});
-	this->objects[1].Rotate(
-		QuaternionFromAxisAngle({0.0f, 1.0f, 0.0f}, 45.0f * DEG2RAD));
-	this->objects[1].Rotate(
-		QuaternionFromAxisAngle({1.0f, 0.0f, 0.0f}, -35.0f * DEG2RAD));
+	//this->objects.push_back(
+	//	CreateBoxObject({2.0f, 0.0f, 0.5f}, {1.0f, 1.0f, 1.0f}));
+	this->DebugAddStairObj({2.0f, 0.0f, 0.5f});
+	//this->objects[1].Rotate(
+	//	QuaternionFromAxisAngle({0.0f, 1.0f, 0.0f}, 45.0f * DEG2RAD));
+	//this->objects[1].Rotate(
+	//	QuaternionFromAxisAngle({1.0f, 0.0f, 0.0f}, -35.0f * DEG2RAD));
 	SetTextColor(INFO);
 	std::cout << "Done Initializing\n";
 	ClearStyles();
-	//auto discard = CheckCollision(
-	//	this->objects[0].GetCollider(), this->objects[0].GetTransformM(),
-	//	this->objects[1].GetCollider(), this->objects[1].GetTransformM());
 
 	imguiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 }
@@ -112,9 +108,14 @@ void World::Update()
 		{
 			// TODO: Add more info
 			Vector3 pos;
+			Vector3 rot;
 			pos = selectedObj->GetPosition();
-			ImGui::DragFloat3("Object Position", &pos.x, 0.01f);
+			rot = QuaternionToEuler(selectedObj->GetRotation()) * RAD2DEG;
+			ImGui::DragFloat3("Position", &pos.x, 0.01f);
+			ImGui::DragFloat3("Rotation", &rot.x, 0.1f);
+			rot = rot * DEG2RAD;
 			selectedObj->SetPosition(pos);
+			selectedObj->SetRotation(QuaternionFromEuler(rot.x, rot.y, rot.z));
 		}
 		ImGui::End();
 	}
@@ -129,6 +130,10 @@ void World::ProcessInput()
 		if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
 		{
 			Vector2 mouseDelta{GetMouseDelta()};
+			if (!IsCursorHidden())
+			{
+				DisableCursor();
+			}
 
 			cam.position =
 				Vector3RotateByAxisAngle(cam.position, {0.0f, 1.0f, 0.0f},
@@ -151,7 +156,11 @@ void World::ProcessInput()
 					{0.0f, 1.0f, 0.0f}),
 				dAngle);
 		}
-		else if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
+		else if (IsCursorHidden())
+		{
+			EnableCursor();
+		}
+		if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT))
 		{
 			selectedObj = nullptr;
 			float dist = std::numeric_limits<float>::max();
@@ -161,7 +170,7 @@ void World::ProcessInput()
 					GetScreenToWorldRay(GetMousePosition(), this->cam), obj);
 				if (hit.has_value())
 				{
-					//DrawSphere(hit->hitPos, 0.025f, GREEN);
+					DrawSphere(hit->hitPos, 0.025f, GREEN);
 					if (hit->hitDist < dist)
 					{
 						dist = hit->hitDist;
@@ -174,6 +183,20 @@ void World::ProcessInput()
 		camMove = Vector3Scale(camMove, GetMouseWheelMove() * 0.1f);
 		cam.position = Vector3Transform(
 			cam.position, MatrixTranslate(camMove.x, camMove.y, camMove.z));
+	}
+	else
+	{
+		//if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+		//{
+		//	if (!IsCursorHidden())
+		//	{
+		//		DisableCursor();
+		//	}
+		//}
+		//else if (IsCursorHidden())
+		//{
+		//	EnableCursor();
+		//}
 	}
 }
 

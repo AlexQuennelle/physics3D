@@ -12,9 +12,8 @@
 #include <vector>
 #ifndef NDEBUG
 #include <csignal>
-//#define VERBOSELOG_COL
 #include <iostream>
-#include <ostream>
+//#define VERBOSELOG_COL
 #ifdef VERBOSELOG_COL
 #include "utils.h"
 #endif // VERBOSELOG_COL
@@ -48,7 +47,9 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 						   const vector<HE::FaceInit>& faces,
 						   const Vector3 origin)
 {
+#ifndef NDEBUG
 	std::cout << "new hull\n";
+#endif // NDEBUG
 	this->origin = origin;
 	for (const auto vert : verts)
 	{
@@ -277,7 +278,7 @@ void CompoundCollider::GetNormals(vector<Vector3>& out) const
 		col->GetNormals(out);
 	}
 }
-Vector3 CompoundCollider::GetSupportPoint(const Vector3&  /*axis*/) const
+Vector3 CompoundCollider::GetSupportPoint(const Vector3& /*axis*/) const
 {
 	return {0.0f, 0.0f, 0.0f};
 }

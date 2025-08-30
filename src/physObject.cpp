@@ -17,6 +17,12 @@
 namespace phys
 {
 
+/**
+ * Tests if a 3D point planar to a face lies within the polygon described by
+ * its edges.
+ */
+bool IsPointInPoly3D(const Vector3 point, const HE::HFace& poly);
+
 std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 									 const PhysObject& obj2)
 {
@@ -173,6 +179,42 @@ std::optional<RaycastHit> CheckRaycast(const Ray ray, PhysObject& obj)
 	{
 		return {};
 	}
+}
+bool IsPointInPoly3D(const Vector3 point, const HE::HFace& poly)
+{
+	bool inPoly{false};
+	auto* edge = poly.Edge();
+	Vector3 xAxis = edge->Dir();
+	Vector3 yAxis = (Vector3CrossProduct(xAxis, poly.normal));
+	Vector2 point2D = {Vector3DotProduct(point, xAxis),
+					   Vector3DotProduct(point, yAxis)};
+	do
+	{
+		edge = edge->Next();
+		Vector2 point1 = {Vector3DotProduct(edge->Vertex()->Vec(), xAxis),
+						  Vector3DotProduct(edge->Vertex()->Vec(), yAxis)};
+		point1 = point1 - point2D;
+		Vector2 point2 = {
+			Vector3DotProduct(edge->Next()->Vertex()->Vec(), xAxis),
+			Vector3DotProduct(edge->Next()->Vertex()->Vec(), yAxis)};
+		point2 = point2 - point2D;
+		if (point1.x < 0 && point2.x < 0)
+			continue;
+		bool edgeCross{false};
+		if ((point1.y > 0 && point2.y <= 0) || (point2.y > 0 && point1.y <= 0))
+		{
+			if (point1.x == point2.x)
+				edgeCross = true;
+			else
+			{
+				float slope = (point1.y - point2.y) / (point1.x - point2.x);
+				edgeCross = -(point1.y / slope) + point1.x >= 0;
+			}
+		}
+		inPoly = inPoly ^ edgeCross;
+	}
+	while (edge->Vertex() != poly.Edge()->Vertex());
+	return inPoly;
 }
 Collider::FaceHit CheckFaceNors(Col_Sptr col1, Col_Sptr col2)
 {
