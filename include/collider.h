@@ -30,11 +30,6 @@ struct Range
 	float min;
 	float max;
 };
-struct Edge
-{
-	uint32_t a;
-	uint32_t b;
-};
 
 /** Abstract Collider class */
 class Collider

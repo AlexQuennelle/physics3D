@@ -68,6 +68,14 @@ class PhysObject
 		MatrixDecompose(this->rotation, &translation, &rot, &scale);
 		return rot;
 	}
+	[[nodiscard]] Vector3 GetScale() const
+	{
+		Quaternion rot;
+		Vector3 translation;
+		Vector3 scale;
+		MatrixDecompose(this->scale, &translation, &rot, &scale);
+		return scale;
+	}
 
 	/** Sets the object's position in world space. */
 	void SetPosition(const Vector3& newPos)
@@ -82,6 +90,14 @@ class PhysObject
 	void SetRotation(const Quaternion& newRot)
 	{
 		this->rotation = QuaternionToMatrix(newRot);
+	}
+	void SetScale(const float newScale)
+	{
+		this->scale = MatrixScale(newScale, newScale, newScale);
+	}
+	void SetScale(const Vector3 newScale)
+	{
+		this->scale = MatrixScale(newScale.x, newScale.y, newScale.z);
 	}
 
 	/** Rotates the object in world space. */

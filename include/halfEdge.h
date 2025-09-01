@@ -53,10 +53,9 @@ struct HEdge
 	[[nodiscard]] HEdge* Twin() const;
 	[[nodiscard]] HEdge* Next() const;
 	[[nodiscard]] HFace* Face() const;
-	[[nodiscard]] Vector3 Dir() const
-	{
-		return Vector3Normalize(Vertex()->Vec() - Next()->Vertex()->Vec());
-	}
+	[[nodiscard]] Vector3 Dir() const;
+	[[nodiscard]] Vector3 Center() const;
+	[[nodiscard]] float Length() const;
 
 	std::vector<HE::HVertex>* vertArr{nullptr};
 	std::vector<HEdge>* edgeArr{nullptr};
@@ -71,6 +70,7 @@ struct HFace
 	uint8_t edgeID{0};
 
 	[[nodiscard]] HEdge* Edge() const;
+	[[nodiscard]] Vector3 Center() const;
 
 	std::vector<HE::HEdge>* edgeArr{nullptr};
 };

@@ -1,5 +1,7 @@
 #include "physObject.h"
 #include "collider.h"
+#include "halfEdge.h"
+#include "imgui.h"
 
 #include <cassert>
 #include <cstdint>
@@ -22,6 +24,8 @@ namespace phys
  * its edges.
  */
 bool IsPointInPoly3D(const Vector3 point, const HE::HFace& poly);
+
+void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident);
 
 std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 									 const PhysObject& obj2)
@@ -50,6 +54,7 @@ std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 				edges.penetration < faces2.penetration)
 			{
 				// Edge collision
+				std::cout << "Edge Collision\n";
 				DrawLine3D(edges.support,
 						   edges.support + (edges.normal * edges.penetration),
 						   GREEN);
@@ -58,17 +63,41 @@ std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 			}
 			else
 			{
+				std::cout << "Face Collision\n";
 				// Face collision
 				auto hull1 = std::dynamic_pointer_cast<HullCollider>(col1);
-				DrawLine3D(faces1.suppport,
-						   faces1.suppport + (hull1->GetFace(faces1.id).normal *
-											  faces1.penetration),
-						   RED);
 				auto hull2 = std::dynamic_pointer_cast<HullCollider>(col2);
-				DrawLine3D(faces2.suppport,
-						   faces2.suppport + (hull2->GetFace(faces2.id).normal *
-											  faces2.penetration),
-						   RED);
+				if (faces1.penetration < faces2.penetration)
+				{
+					const auto& ref = hull1->GetFace(faces1.id);
+					float dot{1.0f};
+					uint8_t incidentID;
+					for (int i{0}; i < hull2->FaceCount(); i++)
+					{
+						const auto& face{hull2->GetFace(i)};
+						if (float newDot{
+								Vector3DotProduct(face.normal, ref.normal)};
+							newDot < dot)
+						{
+							dot = newDot;
+							incidentID = i;
+						}
+					}
+					GenFaceContact(ref, hull2->GetFace(incidentID));
+					DrawLine3D(faces1.suppport,
+							   faces1.suppport +
+								   (hull1->GetFace(faces1.id).normal *
+									faces1.penetration),
+							   RED);
+				}
+				else
+				{
+					DrawLine3D(faces2.suppport,
+							   faces2.suppport +
+								   (hull2->GetFace(faces2.id).normal *
+									faces2.penetration),
+							   RED);
+				}
 			}
 			collision |= true;
 		}
@@ -97,6 +126,58 @@ std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 	}
 	return {};
 }
+void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
+{
+	// Clip algo
+	auto plane = GenMeshPlane(0.5f, 0.5f, 1, 1);
+	vector<HE::HEdge> surface;
+	HE::HEdge* edgeRef{ref.Edge()};
+	do
+	{
+		edgeRef = edgeRef->Next();
+		Vector3 planeNor{
+			Vector3Normalize(Vector3CrossProduct(ref.normal, edgeRef->Dir()))};
+		auto trans = QuaternionToMatrix(
+			QuaternionFromVector3ToVector3({0.0f, 1.0f, 0.0f}, planeNor));
+		trans =
+			trans * MatrixTranslate(edgeRef->Center().x, edgeRef->Center().y,
+									edgeRef->Center().z);
+		DrawMesh(plane, LoadMaterialDefault(), trans);
+		DrawLine3D(edgeRef->Center(), edgeRef->Center() + (planeNor * 0.25f),
+				   BLUE);
+
+		HE::HEdge* edge{incident.Edge()};
+		do
+		{
+			edge = edge->Next();
+			auto edgeDir{edge->Dir()};
+			auto edgeVert{edge->Next()->Vertex()->Vec()};
+			if (Vector3DotProduct(planeNor, edgeDir) < 0)
+			{
+				edgeVert = edge->Vertex()->Vec();
+				edgeDir = Vector3Negate(edgeDir);
+			}
+			float dist{Vector3DotProduct(edgeRef->Vertex()->Vec() - edgeVert,
+										 planeNor) /
+					   Vector3DotProduct(planeNor, edgeDir)};
+			if (dist < 0 || dist > edge->Length())
+				continue;
+			else
+			{
+				Vector3 newPos{edgeVert + (edgeDir * dist)};
+				newPos = newPos +
+						 (Vector3Negate(ref.normal) *
+						  Vector3DotProduct(newPos - edgeRef->Vertex()->Vec(),
+											ref.normal));
+				DrawSphere(newPos, 0.025f, RED);
+				DrawSphere(edgeVert, 0.025f, GREEN);
+			}
+		}
+		while (edge->Vertex() != incident.Edge()->Vertex());
+	}
+	while (edgeRef->Vertex() != ref.Edge()->Vertex());
+	UnloadMesh(plane);
+}
 std::optional<RaycastHit> CheckRaycast(const Ray ray, PhysObject& obj)
 {
 	vector<Col_Sptr> colliders;
@@ -116,47 +197,11 @@ std::optional<RaycastHit> CheckRaycast(const Ray ray, PhysObject& obj)
 			float dist =
 				Vector3DotProduct(face.Edge()->Vertex()->Vec() - ray.position,
 								  face.normal) /
-				Vector3DotProduct(ray.direction, face.normal);
+				Vector3DotProduct(face.normal, ray.direction);
 			if (dist >= 0)
 			{
 				auto hitPos = ray.position + (ray.direction * dist);
-				bool inPoly{false};
-				auto* edge = face.Edge();
-				Vector3 xAxis = edge->Dir();
-				Vector3 yAxis = (Vector3CrossProduct(xAxis, face.normal));
-				Vector2 hitPos2D = {Vector3DotProduct(hitPos, xAxis),
-									Vector3DotProduct(hitPos, yAxis)};
-				do
-				{
-					edge = edge->Next();
-					Vector2 point1 = {
-						Vector3DotProduct(edge->Vertex()->Vec(), xAxis),
-						Vector3DotProduct(edge->Vertex()->Vec(), yAxis)};
-					point1 = point1 - hitPos2D;
-					Vector2 point2 = {
-						Vector3DotProduct(edge->Next()->Vertex()->Vec(), xAxis),
-						Vector3DotProduct(edge->Next()->Vertex()->Vec(),
-										  yAxis)};
-					point2 = point2 - hitPos2D;
-					if (point1.x < 0 && point2.x < 0)
-						continue;
-					bool edgeCross{false};
-					if ((point1.y > 0 && point2.y <= 0) ||
-						(point2.y > 0 && point1.y <= 0))
-					{
-						if (point1.x == point2.x)
-							edgeCross = true;
-						else
-						{
-							float slope =
-								(point1.y - point2.y) / (point1.x - point2.x);
-							edgeCross = -(point1.y / slope) + point1.x >= 0;
-						}
-					}
-					inPoly = inPoly ^ edgeCross;
-				}
-				while (edge->Vertex() != face.Edge()->Vertex());
-				if (inPoly)
+				if (IsPointInPoly3D(hitPos, face))
 				{
 					isHit |= true;
 					if (dist < hitObj.hitDist)

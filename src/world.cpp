@@ -109,13 +109,17 @@ void World::Update()
 			// TODO: Add more info
 			Vector3 pos;
 			Vector3 rot;
+			float scale;
 			pos = selectedObj->GetPosition();
 			rot = QuaternionToEuler(selectedObj->GetRotation()) * RAD2DEG;
+			scale = selectedObj->GetScale().x;
 			ImGui::DragFloat3("Position", &pos.x, 0.01f);
 			ImGui::DragFloat3("Rotation", &rot.x, 0.1f);
+			ImGui::DragFloat("Scale", &scale, 0.01f);
 			rot = rot * DEG2RAD;
 			selectedObj->SetPosition(pos);
 			selectedObj->SetRotation(QuaternionFromEuler(rot.x, rot.y, rot.z));
+			selectedObj->SetScale(scale);
 		}
 		ImGui::End();
 	}
