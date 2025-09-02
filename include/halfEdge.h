@@ -23,6 +23,12 @@ struct HVertex
 	[[nodiscard]] HEdge* Edge() const;
 	[[nodiscard]] Vector3 Vec() const { return {this->x, this->y, this->z}; }
 
+	void SetPos(const Vector3 newPos) {
+		this->x = newPos.x;
+		this->y = newPos.y;
+		this->z = newPos.z;
+	}
+
 	HVertex& operator*(const Matrix mat)
 	{
 		Vector3 result;

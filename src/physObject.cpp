@@ -1,9 +1,9 @@
 #include "physObject.h"
 #include "collider.h"
 #include "halfEdge.h"
-#include "imgui.h"
 
 #include <cassert>
+#include <csignal>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
@@ -131,6 +131,28 @@ void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 	// Clip algo
 	auto plane = GenMeshPlane(0.5f, 0.5f, 1, 1);
 	vector<HE::HEdge> surface;
+	vector<HE::HVertex> sVerts;
+	HE::HEdge* iEdge{incident.Edge()};
+	do
+	{
+		iEdge = iEdge->Next();
+		sVerts.push_back(*iEdge->Vertex());
+		HE::HEdge newEdge{
+			.vertID = static_cast<uint8_t>(sVerts.size() - 1),
+			.twinID = 0,
+			.nextID = static_cast<uint8_t>(sVerts.size()),
+			.faceID = 0,
+			.vertArr = &sVerts,
+			.edgeArr = &surface,
+			.faceArr = nullptr,
+		};
+		surface.push_back(newEdge);
+	}
+	while (iEdge->Vertex() != incident.Edge()->Vertex());
+	//surface.end()->nextID = 0;
+	//raise(SIGTRAP);
+	surface[surface.size() - 1].nextID = 0;
+
 	HE::HEdge* edgeRef{ref.Edge()};
 	do
 	{
@@ -177,6 +199,20 @@ void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 	}
 	while (edgeRef->Vertex() != ref.Edge()->Vertex());
 	UnloadMesh(plane);
+
+	auto* sEdge{surface.data()};
+	do
+	{
+		sEdge = sEdge->Next();
+		auto newVec = sEdge->Vertex()->Vec() +
+					  (Vector3Negate(ref.normal) *
+					   Vector3DotProduct(sEdge->Vertex()->Vec() -
+											 edgeRef->Vertex()->Vec(),
+										 ref.normal));
+		sEdge->Vertex()->SetPos(newVec);
+		DrawSphere(sEdge->Vertex()->Vec(), 0.025f, YELLOW);
+	}
+	while (sEdge->Vertex() != surface[0].Vertex());
 }
 std::optional<RaycastHit> CheckRaycast(const Ray ray, PhysObject& obj)
 {

@@ -21,8 +21,8 @@ REM 	emmake ninja
 REM 	cd ..
 REM 	exit
 REM )
-if not exist "build" mkdir "build"
-cd build
+if not exist "build.win" mkdir "build.win"
+cd build.win
 cmake -DCMAKE_BUILD_TYPE="!buildType!" .. -G "Ninja"
 echo Building Executable
 Ninja
