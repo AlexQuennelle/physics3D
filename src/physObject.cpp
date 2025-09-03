@@ -140,17 +140,16 @@ void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 		HE::HEdge newEdge{
 			.vertID = static_cast<uint8_t>(sVerts.size() - 1),
 			.twinID = 0,
-			.nextID = static_cast<uint8_t>(sVerts.size()),
+			.nextID = static_cast<uint8_t>(surface.size() + 1),
 			.faceID = 0,
 			.vertArr = &sVerts,
 			.edgeArr = &surface,
 			.faceArr = nullptr,
 		};
+		std::cout << surface.size() + 1 << '\n';
 		surface.push_back(newEdge);
 	}
 	while (iEdge->Vertex() != incident.Edge()->Vertex());
-	//surface.end()->nextID = 0;
-	//raise(SIGTRAP);
 	surface[surface.size() - 1].nextID = 0;
 
 	HE::HEdge* edgeRef{ref.Edge()};
@@ -167,6 +166,62 @@ void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 		DrawMesh(plane, LoadMaterialDefault(), trans);
 		DrawLine3D(edgeRef->Center(), edgeRef->Center() + (planeNor * 0.25f),
 				   BLUE);
+
+		vector<HE::HEdge> newSurface{};
+		vector<HE::HVertex> newVerts{};
+		HE::HEdge* sEdge{surface.data()};
+		do
+		{
+			sEdge = sEdge->Next();
+			auto edgeDir{sEdge->Dir()};
+			auto edgeVert{sEdge->Next()->Vertex()->Vec()};
+			if (Vector3DotProduct(planeNor, edgeDir) < 0)
+			{
+				edgeVert = sEdge->Vertex()->Vec();
+				edgeDir = Vector3Negate(edgeDir);
+			}
+			float dist{Vector3DotProduct(edgeRef->Vertex()->Vec() - edgeVert,
+										 planeNor) /
+					   Vector3DotProduct(planeNor, edgeDir)};
+			if (dist < 0)
+			{
+				continue;
+			}
+			else if (dist > sEdge->Length())
+			{
+				newVerts.push_back(*sEdge->Vertex());
+				HE::HEdge newEdge{
+					.vertID = static_cast<uint8_t>(newVerts.size() - 1),
+					.twinID = 0,
+					.nextID = static_cast<uint8_t>(newSurface.size() + 1),
+					.faceID = 0,
+					.vertArr = &sVerts,
+					.edgeArr = &surface,
+					.faceArr = nullptr,
+				};
+				std::cout << newSurface.size() + 1 << '\n';
+				newSurface.push_back(newEdge);
+				continue;
+			}
+			else
+			{
+				Vector3 newPos{edgeVert + (edgeDir * dist)};
+				newPos = newPos +
+						 (Vector3Negate(ref.normal) *
+						  Vector3DotProduct(newPos - edgeRef->Vertex()->Vec(),
+											ref.normal));
+			}
+			//raise(SIGTRAP);
+		}
+		while (sEdge->Vertex() != surface.data()->Vertex());
+		//newSurface[newSurface.size() - 1].nextID = 0;
+		//sVerts = newVerts;
+		//surface = newSurface;
+		//for (auto& edge : surface)
+		//{
+		//	edge.vertArr = &sVerts;
+		//	edge.edgeArr = &surface;
+		//}
 
 		HE::HEdge* edge{incident.Edge()};
 		do
