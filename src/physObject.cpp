@@ -169,6 +169,11 @@ void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 
 		vector<HE::HEdge> newSurface{};
 		vector<HE::HVertex> newVerts{};
+		if (Vector3DotProduct(planeNor, incident.Edge()->Vertex()->Vec() -
+											sVerts[0].Vec()) > 0)
+		{
+			newVerts.push_back(sVerts[0]);
+		}
 		HE::HEdge* sEdge{surface.data()};
 		do
 		{
