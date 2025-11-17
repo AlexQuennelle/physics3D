@@ -1,17 +1,14 @@
 cmake_minimum_required(VERSION 3.30.5)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 
-if("${CMAKE_GENERATOR}" STREQUAL "Visual Studio 17 2022")
-    message("Visual Studio Generator")
-else()
-    # set(CMAKE_CXX_FLAGS "-Wall -Wextra")
-endif()
+# if("${CMAKE_GENERATOR}" STREQUAL "Visual Studio 17 2022") message("Visual
+# Studio Generator") else() # set(CMAKE_CXX_FLAGS "-Wall -Wextra") endif()
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O3;-ffast-math>")
 
 # Change this to match the name of the current folder
@@ -89,6 +86,9 @@ if(EMSCRIPTEN)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}\
  --shell-file ${CMAKE_CURRENT_SOURCE_DIR}/src/template.html"
     )
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}\
+ --js-library ${CMAKE_CURRENT_SOURCE_DIR}/src/wasmUtils.js"
+    )
     file(GLOB_RECURSE DATAFILES CONFIGURE_DEPENDS
          "${CMAKE_CURRENT_SOURCE_DIR}/resources/*"
     )
@@ -138,7 +138,7 @@ target_compile_definitions(
         RESOURCES_PATH=$<IF:$<CONFIG:Release>,"./resources/","${DEBUG_RESOURCE_DIR}">
 )
 
-target_compile_features("${CMAKE_PROJECT_NAME}" PRIVATE cxx_std_20)
+target_compile_features("${CMAKE_PROJECT_NAME}" PRIVATE cxx_std_23)
 
 target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${MY_SOURCES})
 

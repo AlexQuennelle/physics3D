@@ -1,10 +1,9 @@
-#include "world.h"
+#include "program.h"
 #include "collider.h"
 #include "physObject.h"
 #include "utils.h"
 
 #include <cassert>
-#include <csignal>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -20,7 +19,7 @@
 namespace phys
 {
 
-World::World() : imguiIO(ImGui::GetIO())
+Program::Program() : imguiIO(ImGui::GetIO())
 {
 	SetTextColor(INFO);
 	std::cout << "Initializing World\n";
@@ -54,7 +53,7 @@ World::World() : imguiIO(ImGui::GetIO())
 	imguiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 }
 
-void World::Update()
+void Program::Update()
 {
 	this->deltaTime = GetFrameTime();
 	BeginDrawing();
@@ -91,7 +90,7 @@ void World::Update()
 	//BeginDrawing();
 	//ClearBackground({100, 149, 237, 255});
 	//BeginMode3D(cam);
-	DrawGrid(2.5, 2);
+	DrawGrid(2.5f, 2);
 	for (const auto& obj : this->objects)
 	{
 		obj.Draw();
@@ -127,7 +126,7 @@ void World::Update()
 	rlImGuiEnd();
 	EndDrawing();
 }
-void World::ProcessInput()
+void Program::ProcessInput()
 {
 	if (!imguiIO.WantCaptureMouse)
 	{
@@ -205,7 +204,7 @@ void World::ProcessInput()
 }
 
 // HACK: The following is a hack for testing purposes.
-void World::DebugAddStairObj(Vector3 pos)
+void Program::DebugAddStairObj(Vector3 pos)
 {
 	Model model = LoadModel(RESOURCES_PATH "stairs.obj");
 

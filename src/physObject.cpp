@@ -132,6 +132,7 @@ void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 	auto plane = GenMeshPlane(0.5f, 0.5f, 1, 1);
 	vector<HE::HEdge> surface;
 	vector<HE::HVertex> sVerts;
+	// Iterate over incident edges to create a surface shape
 	HE::HEdge* iEdge{incident.Edge()};
 	do
 	{
@@ -150,8 +151,9 @@ void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 		surface.push_back(newEdge);
 	}
 	while (iEdge->Vertex() != incident.Edge()->Vertex());
-	surface[surface.size() - 1].nextID = 0;
+	surface[surface.size() - 1].nextID = 0; // Close the loop
 
+	// Iterate over reference face's edges to clip the surface
 	HE::HEdge* edgeRef{ref.Edge()};
 	do
 	{
@@ -163,10 +165,15 @@ void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 		trans =
 			trans * MatrixTranslate(edgeRef->Center().x, edgeRef->Center().y,
 									edgeRef->Center().z);
+#ifndef NDEBUG
 		DrawMesh(plane, LoadMaterialDefault(), trans);
 		DrawLine3D(edgeRef->Center(), edgeRef->Center() + (planeNor * 0.25f),
 				   BLUE);
+#endif // !NDEBUG
 
+		// Iterate over surface and clip it against the current reference edge.
+		// Clipped surface goes in new vectors, that are then swapped in with
+		// the old ones
 		vector<HE::HEdge> newSurface{};
 		vector<HE::HVertex> newVerts{};
 		HE::HEdge* sEdge{surface.data()};
@@ -210,11 +217,27 @@ void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 						 (Vector3Negate(ref.normal) *
 						  Vector3DotProduct(newPos - edgeRef->Vertex()->Vec(),
 											ref.normal));
+				newVerts.emplace_back(newPos.x, newPos.y, newPos.z,
+									  newSurface.size());
+				HE::HEdge newEdge{
+					.vertID = static_cast<uint8_t>(newVerts.size() - 1),
+					.twinID = 0,
+					.nextID = static_cast<uint8_t>(newSurface.size() + 1),
+					.faceID = 0,
+					.vertArr = &sVerts,
+					.edgeArr = &surface,
+					.faceArr = nullptr,
+				};
+				std::cout << newSurface.size() + 1 << '\n';
+				newSurface.push_back(newEdge);
+				continue;
 			}
 			//raise(SIGTRAP);
+			break;
 		}
 		while (sEdge->Vertex() != surface.data()->Vertex());
-		//newSurface[newSurface.size() - 1].nextID = 0;
+		std::cout << newSurface.size() << '\n';
+		newSurface[newSurface.size() - 1].nextID = 0; // Close the loop
 		//sVerts = newVerts;
 		//surface = newSurface;
 		//for (auto& edge : surface)
@@ -223,6 +246,7 @@ void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 		//	edge.edgeArr = &surface;
 		//}
 
+		break;
 		HE::HEdge* edge{incident.Edge()};
 		do
 		{

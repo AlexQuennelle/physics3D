@@ -1,16 +1,17 @@
-#include "world.h"
+#include "program.h"
 
 #include <memory>
 #include <raylib.h>
 #include <raymath.h>
 #include <rlImGui.h>
 #if defined(PLATFORM_WEB)
+#include "wasmUtils.h"
 #include <emscripten/emscripten.h>
 #endif
 
 void Update();
 
-std::unique_ptr<phys::World> world{nullptr};
+std::unique_ptr<phys::Program> program{nullptr};
 
 int main()
 {
@@ -19,12 +20,13 @@ int main()
 	InitWindow(500, 500, NAME);
 	rlImGuiSetup(true);
 	world = std::make_unique<phys::World>();
+	requestSize(500, 500);
 	emscripten_set_main_loop(Update, 0, 1);
 #else
 	InitWindow(800, 800, NAME);
 	SetTargetFPS(60);
 	rlImGuiSetup(true);
-	world = std::make_unique<phys::World>();
+	program = std::make_unique<phys::Program>();
 #endif
 
 #if !defined(PLATFORM_WEB)
@@ -33,6 +35,8 @@ int main()
 		Update();
 	}
 #endif
+
+	program.reset(nullptr);
 
 	rlImGuiShutdown();
 	CloseWindow();
@@ -46,5 +50,5 @@ void Update()
 	//{
 	//	TakeScreenshot("screenshot.png");
 	//}
-	world->Update();
+	program->Update();
 }

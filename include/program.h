@@ -11,10 +11,10 @@ namespace phys
 
 using std::vector;
 
-class World
+class Program
 {
 	public:
-	World();
+	Program();
 
 	void Update();
 

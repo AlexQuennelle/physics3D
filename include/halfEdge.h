@@ -15,15 +15,22 @@ struct HFace;
 
 struct HVertex
 {
+	// HVertex(const float x, const float y, const float z, uint8_t edge)
+	// 	: x(x), y(y), z(z), edgeID(edge) {};
+	// HVertex(const Vector3 vec, uint8_t edge)
+	// 	: HVertex(vec.x, vec.y, vec.z, edge) {};
+
 	float x;
 	float y;
 	float z;
 	uint8_t edgeID{0};
 
-	[[nodiscard]] HEdge* Edge() const;
-	[[nodiscard]] Vector3 Vec() const { return {this->x, this->y, this->z}; }
+	HEdge* Edge() const;
+	Vector3 Vec() const { return {this->x, this->y, this->z}; }
+	operator Vector3() { return {this->x, this->y, this->z}; }
 
-	void SetPos(const Vector3 newPos) {
+	void SetPos(const Vector3 newPos)
+	{
 		this->x = newPos.x;
 		this->y = newPos.y;
 		this->z = newPos.z;
@@ -32,9 +39,9 @@ struct HVertex
 	HVertex& operator*(const Matrix mat)
 	{
 		Vector3 result;
-		result.x = mat.m0 * x + mat.m4 * y + mat.m8 * z + mat.m12;
-		result.y = mat.m1 * x + mat.m5 * y + mat.m9 * z + mat.m13;
-		result.z = mat.m2 * x + mat.m6 * y + mat.m10 * z + mat.m14;
+		result.x = (mat.m0 * x) + (mat.m4 * y) + (mat.m8 * z) + mat.m12;
+		result.y = (mat.m1 * x) + (mat.m5 * y) + (mat.m9 * z) + mat.m13;
+		result.z = (mat.m2 * x) + (mat.m6 * y) + (mat.m10 * z) + mat.m14;
 		this->x = result.x;
 		this->y = result.y;
 		this->z = result.z;
@@ -55,13 +62,13 @@ struct HEdge
 	uint8_t nextID{0};
 	uint8_t faceID{0};
 
-	[[nodiscard]] HVertex* Vertex() const;
-	[[nodiscard]] HEdge* Twin() const;
-	[[nodiscard]] HEdge* Next() const;
-	[[nodiscard]] HFace* Face() const;
-	[[nodiscard]] Vector3 Dir() const;
-	[[nodiscard]] Vector3 Center() const;
-	[[nodiscard]] float Length() const;
+	HVertex* Vertex() const;
+	HEdge* Twin() const;
+	HEdge* Next() const;
+	HFace* Face() const;
+	Vector3 Dir() const;
+	Vector3 Center() const;
+	float Length() const;
 
 	std::vector<HE::HVertex>* vertArr{nullptr};
 	std::vector<HEdge>* edgeArr{nullptr};
@@ -75,8 +82,8 @@ struct HFace
 	Vector3 normal;
 	uint8_t edgeID{0};
 
-	[[nodiscard]] HEdge* Edge() const;
-	[[nodiscard]] Vector3 Center() const;
+	HEdge* Edge() const;
+	Vector3 Center() const;
 
 	std::vector<HE::HEdge>* edgeArr{nullptr};
 };
