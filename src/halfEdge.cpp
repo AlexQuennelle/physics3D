@@ -14,7 +14,7 @@ HEdge* HEdge::Next() const { return &(*edgeArr)[this->nextID]; }
 HFace* HEdge::Face() const { return &(*faceArr)[this->faceID]; }
 Vector3 HEdge::Dir() const
 {
-	return Vector3Normalize(Vertex()->Vec() - Next()->Vertex()->Vec());
+	return Vector3Normalize(this->Next()->Vertex()->Vec() - Vertex()->Vec());
 }
 Vector3 HEdge::Center() const
 {
