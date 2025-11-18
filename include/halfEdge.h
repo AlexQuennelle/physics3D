@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <iterator>
 #include <ostream>
 #include <raylib.h>
 #include <raymath.h>
@@ -73,6 +74,51 @@ struct HEdge
 	std::vector<HE::HVertex>* vertArr{nullptr};
 	std::vector<HEdge>* edgeArr{nullptr};
 	std::vector<HE::HFace>* faceArr{nullptr};
+
+	class Iterator
+	{
+		public:
+		Iterator(HEdge* edge) : current(edge->Next()), start(edge) {}
+
+		HEdge& operator*() const { return *current; }
+		Iterator& operator++()
+		{
+			if (this->current != this->start)
+				this->current = this->current->Next();
+			else
+				this->current = nullptr;
+			return *this;
+		}
+		Iterator operator++(int)
+		{
+			Iterator temp = *this;
+			++(*this);
+			return temp;
+		}
+		bool operator==(const Iterator& other) const
+		{
+			if (this->current == nullptr && other.current == nullptr)
+				return true;
+
+			return this->current == other.current &&
+				   (this->current != this->start ||
+					other.current != this->start);
+		}
+		bool operator!=(const Iterator& other) const
+		{
+			return !(*this == other);
+		}
+
+		static Iterator EndIter() { return {nullptr, nullptr}; }
+
+		private:
+		Iterator(HEdge* edge, HEdge* start) : current(edge), start(start) {}
+
+		HEdge* current;
+		HEdge* start;
+	};
+	Iterator begin() { return {this}; }
+	static Iterator end() { return Iterator::EndIter(); }
 };
 
 struct HFace
@@ -84,6 +130,10 @@ struct HFace
 
 	HEdge* Edge() const;
 	Vector3 Center() const;
+
+	HEdge::Iterator begin() { return {this->Edge()}; }
+	HEdge::Iterator begin() const { return {this->Edge()}; }
+	static HEdge::Iterator end() { return HEdge::Iterator::EndIter(); }
 
 	std::vector<HE::HEdge>* edgeArr{nullptr};
 };

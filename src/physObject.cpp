@@ -3,7 +3,6 @@
 #include "halfEdge.h"
 
 #include <cassert>
-#include <csignal>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
@@ -133,11 +132,9 @@ void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 	vector<HE::HEdge> surface;
 	vector<HE::HVertex> sVerts;
 	// Iterate over incident edges to create a surface shape
-	HE::HEdge* iEdge{incident.Edge()};
-	do
+	for (const auto& edge : incident)
 	{
-		iEdge = iEdge->Next();
-		sVerts.push_back(*iEdge->Vertex());
+		sVerts.push_back(*edge.Vertex());
 		HE::HEdge newEdge{
 			.vertID = static_cast<uint8_t>(sVerts.size() - 1),
 			.twinID = 0,
@@ -149,24 +146,20 @@ void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 		};
 		surface.push_back(newEdge);
 	}
-	while (iEdge->Vertex() != incident.Edge()->Vertex());
 	surface[surface.size() - 1].nextID = 0; // Close the loop
 
 	// Iterate over reference face's edges to clip the surface
-	HE::HEdge* edgeRef{ref.Edge()};
-	do
+	for (auto& edgeRef : ref)
 	{
-		edgeRef = edgeRef->Next();
 		Vector3 planeNor{
-			Vector3Normalize(Vector3CrossProduct(ref.normal, edgeRef->Dir()))};
+			Vector3Normalize(Vector3CrossProduct(ref.normal, edgeRef.Dir()))};
 		auto trans = QuaternionToMatrix(
 			QuaternionFromVector3ToVector3({0.0f, 1.0f, 0.0f}, planeNor));
-		trans =
-			trans * MatrixTranslate(edgeRef->Center().x, edgeRef->Center().y,
-									edgeRef->Center().z);
+		trans = trans * MatrixTranslate(edgeRef.Center().x, edgeRef.Center().y,
+										edgeRef.Center().z);
 #ifndef NDEBUG
 		DrawMesh(plane, LoadMaterialDefault(), trans);
-		DrawLine3D(edgeRef->Center(), edgeRef->Center() + (planeNor * 0.25f),
+		DrawLine3D(edgeRef.Center(), edgeRef.Center() + (planeNor * 0.25f),
 				   BLUE);
 #endif // !NDEBUG
 
@@ -187,31 +180,28 @@ void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 		// Iterate over surface and clip it against the current reference edge.
 		// Clipped surface goes in new vectors, that are then swapped in with
 		// the old ones
-		HE::HEdge* sEdge{surface.data()};
-		do
+		for (const auto& sEdge : *surface.data())
 		{
-			sEdge = sEdge->Next();
-
 			// Initialize direction and next vertex
-			Vector3 edgeDir{sEdge->Dir()};
-			Vector3 edgeVert{sEdge->Next()->Vertex()->Vec()};
+			Vector3 edgeDir{sEdge.Dir()};
+			Vector3 edgeVert{sEdge.Next()->Vertex()->Vec()};
 			// If the edge direction is more than 90° from normal, reverse edge
 			// direction and set the vertex to the tail????
 			// I don't know why I'm doing it this way
 			if (Vector3DotProduct(planeNor, edgeDir) < 0)
 			{
-				edgeVert = sEdge->Vertex()->Vec();
+				edgeVert = sEdge.Vertex()->Vec();
 				edgeDir = Vector3Negate(edgeDir);
 			}
 			// Ray plane intersection
-			float dist{Vector3DotProduct(edgeRef->Vertex()->Vec() - edgeVert,
+			float dist{Vector3DotProduct(edgeRef.Vertex()->Vec() - edgeVert,
 										 planeNor) /
 					   Vector3DotProduct(planeNor, edgeDir)};
 			if (dist < 0)
 			{
 				continue;
 			}
-			else if (dist > sEdge->Length())
+			else if (dist > sEdge.Length())
 			{
 				// newVerts.push_back(*sEdge->Vertex());
 				// HE::HEdge newEdge{
@@ -252,7 +242,6 @@ void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 			}
 			//raise(SIGTRAP);
 		}
-		while (sEdge->Vertex() != surface.data()->Vertex());
 		// std::cout << newSurface.size() << '\n';
 		// newSurface[newSurface.size() - 1].nextID = 0; // Close the loop
 		// newSurface[newSurface.size() - 1].vertID = 0;
@@ -265,52 +254,48 @@ void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 		//}
 
 		break;
-		HE::HEdge* edge{incident.Edge()};
-		do
+		for (const auto& edge : incident)
 		{
-			edge = edge->Next();
-			auto edgeDir{edge->Dir()};
-			auto edgeVert{edge->Next()->Vertex()->Vec()};
+			auto edgeDir{edge.Dir()};
+			auto edgeVert{edge.Next()->Vertex()->Vec()};
 			if (Vector3DotProduct(planeNor, edgeDir) < 0)
 			{
-				edgeVert = edge->Vertex()->Vec();
+				edgeVert = edge.Vertex()->Vec();
 				edgeDir = Vector3Negate(edgeDir);
 			}
-			float dist{Vector3DotProduct(edgeRef->Vertex()->Vec() - edgeVert,
+			float dist{Vector3DotProduct(edgeRef.Vertex()->Vec() - edgeVert,
 										 planeNor) /
 					   Vector3DotProduct(planeNor, edgeDir)};
-			if (dist < 0 || dist > edge->Length())
+			if (dist < 0 || dist > edge.Length())
 				continue;
 			else
 			{
 				Vector3 newPos{edgeVert + (edgeDir * dist)};
 				newPos = newPos +
 						 (Vector3Negate(ref.normal) *
-						  Vector3DotProduct(newPos - edgeRef->Vertex()->Vec(),
+						  Vector3DotProduct(newPos - edgeRef.Vertex()->Vec(),
 											ref.normal));
 				DrawSphere(newPos, 0.025f, RED);
 				DrawSphere(edgeVert, 0.025f, GREEN);
 			}
 		}
-		while (edge->Vertex() != incident.Edge()->Vertex());
 		break;
 	}
-	while (edgeRef->Vertex() != ref.Edge()->Vertex());
 	UnloadMesh(plane);
 
-	auto* sEdge{surface.data()};
-	do
-	{
-		sEdge = sEdge->Next();
-		auto newVec = sEdge->Vertex()->Vec() +
-					  (Vector3Negate(ref.normal) *
-					   Vector3DotProduct(sEdge->Vertex()->Vec() -
-											 edgeRef->Vertex()->Vec(),
-										 ref.normal));
-		sEdge->Vertex()->SetPos(newVec);
-		DrawSphere(sEdge->Vertex()->Vec(), 0.025f, YELLOW);
-	}
-	while (sEdge->Vertex() != surface[0].Vertex());
+	// auto* sEdge{surface.data()};
+	// do
+	// {
+	// 	sEdge = sEdge->Next();
+	// 	auto newVec = sEdge->Vertex()->Vec() +
+	// 				  (Vector3Negate(ref.normal) *
+	// 				   Vector3DotProduct(sEdge->Vertex()->Vec() -
+	// 										 edgeRef->Vertex()->Vec(),
+	// 									 ref.normal));
+	// 	sEdge->Vertex()->SetPos(newVec);
+	// 	DrawSphere(sEdge->Vertex()->Vec(), 0.025f, YELLOW);
+	// }
+	// while (sEdge->Vertex() != surface[0].Vertex());
 }
 std::optional<RaycastHit> CheckRaycast(const Ray ray, PhysObject& obj)
 {
@@ -395,20 +380,20 @@ bool IsPointInPoly3D(const Vector3 point, const HE::HFace& poly)
 	while (edge->Vertex() != poly.Edge()->Vertex());
 	return inPoly;
 }
-Collider::FaceHit CheckFaceNors(Col_Sptr col1, Col_Sptr col2)
+Collider::FaceHit CheckFaceNors(Col_Sptr colA, Col_Sptr colB)
 {
 #ifndef NDEBUG
 	vector<Vector3> nors;
-	col1->GetNormals(nors);
+	colA->GetNormals(nors);
 	srand(static_cast<int>(nors[0].x + nors[1].y));
 #endif // !NDEBUG
 	Collider::FaceHit hit{};
 	hit.penetration = std::numeric_limits<float>::max();
-	auto hull1 = std::dynamic_pointer_cast<HullCollider>(col1);
+	auto hull1 = std::dynamic_pointer_cast<HullCollider>(colA);
 	for (int i{0}; i < hull1->faces.size(); i++)
 	{
 		Vector3 nor = hull1->faces[i].normal;
-		Vector3 support = col2->GetSupportPoint(Vector3Negate(nor));
+		Vector3 support = colB->GetSupportPoint(Vector3Negate(nor));
 		float penetration =
 			Vector3DotProduct(hull1->faces[i].Edge()->Vertex()->Vec(), nor) -
 			Vector3DotProduct(support, nor);
@@ -433,17 +418,17 @@ Collider::FaceHit CheckFaceNors(Col_Sptr col1, Col_Sptr col2)
 	}
 	return hit;
 }
-Collider::EdgeHit CheckEdgeNors(Col_Sptr col1, Col_Sptr col2)
+Collider::EdgeHit CheckEdgeNors(Col_Sptr colA, Col_Sptr colB)
 {
 #ifndef NDEBUG
 	vector<Vector3> nors;
-	col1->GetNormals(nors);
+	colA->GetNormals(nors);
 	srand(static_cast<int>(nors[0].x + nors[1].y));
 #endif // !NDEBUG
 	Collider::EdgeHit hit{};
 	hit.penetration = std::numeric_limits<float>::max();
-	auto hull1 = std::dynamic_pointer_cast<HullCollider>(col1);
-	auto hull2 = std::dynamic_pointer_cast<HullCollider>(col2);
+	auto hull1 = std::dynamic_pointer_cast<HullCollider>(colA);
+	auto hull2 = std::dynamic_pointer_cast<HullCollider>(colB);
 	std::set<int> edges1;
 	std::set<int> edges2;
 	for (int i{0}; i < hull1->edges.size(); i++)
@@ -463,19 +448,18 @@ Collider::EdgeHit CheckEdgeNors(Col_Sptr col1, Col_Sptr col2)
 			}
 			auto edge2 = hull2->edges[j];
 			edges2.insert(i);
-			//edges2.insert(hull2->edges[j].twinID);
 			Vector3 nor =
 				Vector3Normalize(Vector3CrossProduct(edge1.Dir(), edge2.Dir()));
-			Vector3 p =
+			Vector3 pen =
 				(edge1.Vertex()->Vec() + edge1.Next()->Vertex()->Vec()) / 2;
-			if (Vector3DotProduct(nor, Vector3Normalize(p - hull1->origin)) <=
+			if (Vector3DotProduct(nor, Vector3Normalize(pen - hull1->origin)) <=
 				0)
 			{
 				nor = Vector3Negate(nor);
 			}
-			Vector3 support = col2->GetSupportPoint(Vector3Negate(nor));
+			Vector3 support = colB->GetSupportPoint(Vector3Negate(nor));
 			float penetration =
-				col1->GetProjection(nor).max - Vector3DotProduct(support, nor);
+				colA->GetProjection(nor).max - Vector3DotProduct(support, nor);
 			if (penetration < hit.penetration)
 			{
 				hit.penetration = penetration;

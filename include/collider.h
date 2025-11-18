@@ -80,8 +80,8 @@ class Collider
 		Vector3 support;
 		Vector3 normal;
 	};
-	friend FaceHit CheckFaceNors(Col_Sptr col1, Col_Sptr col2);
-	friend EdgeHit CheckEdgeNors(Col_Sptr col1, Col_Sptr col2);
+	friend FaceHit CheckFaceNors(Col_Sptr colA, Col_Sptr colB);
+	friend EdgeHit CheckEdgeNors(Col_Sptr colA, Col_Sptr colB);
 
 	protected:
 	Vector3 origin{0.0f, 0.0f, 0.0f};
@@ -143,8 +143,8 @@ class HullCollider : public Collider
 
 	void DebugDraw(const Matrix& transform, const Color& col) const override;
 
-	friend FaceHit CheckFaceNors(Col_Sptr col1, Col_Sptr col2);
-	friend EdgeHit CheckEdgeNors(Col_Sptr col1, Col_Sptr col2);
+	friend FaceHit CheckFaceNors(Col_Sptr colA, Col_Sptr colB);
+	friend EdgeHit CheckEdgeNors(Col_Sptr colA, Col_Sptr colB);
 
 	private:
 	vector<HE::HEdge> edges;
