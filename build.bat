@@ -24,6 +24,7 @@ REM )
 if not exist "build.win" mkdir "build.win"
 cd build.win
 cmake -DCMAKE_BUILD_TYPE="!buildType!" .. -G "Ninja"
+REM cmake -DCMAKE_CXX_FLAGS="-fsanitize=address" -DCMAKE_C_FLAGS="-fsanitize=address" -DCMAKE_BUILD_TYPE="!buildType!" .. -G "Ninja"
 echo Building Executable
 Ninja
 echo !buildType!

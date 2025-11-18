@@ -22,9 +22,9 @@ namespace phys
  * Tests if a 3D point planar to a face lies within the polygon described by
  * its edges.
  */
-bool IsPointInPoly3D(const Vector3 point, const HE::HFace& poly);
+auto IsPointInPoly3D(const Vector3 point, const HE::HFace& poly) -> bool;
 
-void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident);
+auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident) -> void;
 
 std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 									 const PhysObject& obj2)
@@ -125,13 +125,10 @@ std::optional<HitObj> CheckCollision(const PhysObject& obj1,
 	}
 	return {};
 }
-void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
+auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident) -> void
 {
-	// Clip algo
-	auto plane = GenMeshPlane(0.5f, 0.5f, 1, 1);
-	vector<HE::HEdge> surface;
-	vector<HE::HVertex> sVerts;
-	// Iterate over incident edges to create a surface shape
+	vector<HE::HEdge> surface{};
+	vector<HE::HVertex> sVerts{};
 	for (const auto& edge : incident)
 	{
 		sVerts.push_back(*edge.Vertex());
@@ -147,175 +144,100 @@ void GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 		surface.push_back(newEdge);
 	}
 	surface[surface.size() - 1].nextID = 0; // Close the loop
-	int i{0};
-	Vector3 x{0.05f, 0.0f, 0.0f};
-	Vector3 y{0.0f, 0.05f, 0.0f};
-	Vector3 z{0.0f, 0.0f, 0.05f};
-	DrawLine3D(*surface[i].Vertex() - x, *surface[i].Vertex() + x, RED);
-	DrawLine3D(*surface[i].Vertex() - y, *surface[i].Vertex() + y, RED);
-	DrawLine3D(*surface[i].Vertex() - z, *surface[i].Vertex() + z, RED);
-	DrawSphere(*surface[i].Vertex() + (surface[i].Dir() * 0.1f), 0.025f, WHITE);
 
-	// Iterate over reference face's edges to clip the surface
-	for (auto& edgeRef : ref)
+	int loop{0};
+	for (auto& edgeRef : *ref.Edge())
 	{
+		loop++;
+		if (loop > 3)
+			break;
+
 		Vector3 planeNor{
 			Vector3Normalize(Vector3CrossProduct(edgeRef.Dir(), ref.normal))};
-		auto trans = QuaternionToMatrix(
-			QuaternionFromVector3ToVector3({0.0f, 1.0f, 0.0f}, planeNor));
-		trans = trans * MatrixScale(5.0f, 5.0f, 5.0f);
-		trans = trans * MatrixTranslate(edgeRef.Center().x, edgeRef.Center().y,
-										edgeRef.Center().z);
-#ifndef NDEBUG
-		auto mat{LoadMaterialDefault()};
-		mat.maps[MATERIAL_MAP_ALBEDO].color = GRAY;
-		DrawMesh(plane, mat, trans);
-		DrawLine3D(edgeRef.Center(), edgeRef.Center() + (planeNor * 0.25f),
-				   BLUE);
-#endif // !NDEBUG
 
-		vector<HE::HEdge> newSurface{};
-		vector<HE::HVertex> newVerts{};
-		// Check if the first edge we check(starting with next() because the
-		// iterator starts on the second edge) starts on the 'inside' side of
-		// the clip plane.
-		// If it does, add the starting vertex to the new vertex array
-		bool startsInside{
-			Vector3DotProduct(planeNor, surface.data()->Vertex()->Vec() -
-											*edgeRef.Vertex()) > 0};
-		// incident.Edge()->Next()->Vertex()->Vec() -
-		// sVerts[0].Vec()) > 0};
-		if (startsInside)
+		auto sideTest = [planeNor, edgeRef](Vector3 point) -> bool
 		{
-			newVerts.push_back(sVerts[0]);
-		}
-		// Iterate over surface and clip it against the current reference edge.
-		// Clipped surface goes in new vectors, that are then swapped in with
-		// the old ones
-		for (const auto& sEdge : *&surface[0])
+			return Vector3DotProduct(planeNor,
+									 point - edgeRef.Vertex()->Vec()) > 0;
+		};
+
+		vector<HE::HEdge> newSurface{0};
+		vector<HE::HVertex> newVerts{0};
+		for (const auto& sEdge : *surface.data())
 		{
-			// Initialize direction and next vertex
 			Vector3 edgeDir{sEdge.Dir()};
-			Vector3 edgeVert{sEdge.Vertex()->Vec()};
-			// If the edge direction is more than 90° from normal, reverse edge
-			// direction and set the vertex to the tail????
-			// I don't know why I'm doing it this way
-			// Vector3 x{0.05f, 0.0f, 0.0f};
-			// Vector3 y{0.0f, 0.05f, 0.0f};
-			// Vector3 z{0.0f, 0.0f, 0.05f};
-			// DrawLine3D(*sEdge.Vertex() - x, *sEdge.Vertex() + x, RED);
-			// DrawLine3D(*sEdge.Vertex() - y, *sEdge.Vertex() + y, RED);
-			// DrawLine3D(*sEdge.Vertex() - z, *sEdge.Vertex() + z, RED);
-			// DrawSphere(*sEdge.Vertex() + (sEdge.Dir() * 0.1f), 0.025f,
-			// WHITE);
-			if (Vector3DotProduct(planeNor, edgeDir) > 0)
+			Vector3 edgeVert = sEdge.Vertex()->Vec();
+
+			bool bothInside{false};
+			if (Vector3DotProduct(planeNor, edgeDir) >= 0)
 			{
 				edgeVert = sEdge.Next()->Vertex()->Vec();
 				edgeDir = Vector3Negate(edgeDir);
-				if (Vector3DotProduct(planeNor, sEdge.Next()->Vertex()->Vec() -
-													*edgeRef.Vertex()) > 0)
-				{
-					std::cout << "test\n";
-					newVerts.push_back(*sEdge.Next()->Vertex());
-				}
+
+				bothInside = sideTest(sEdge.Next()->Vertex()->Vec()) &&
+							 !sideTest(sEdge.Vertex()->Vec());
 			}
-			// Ray plane intersection
 			float dist{Vector3DotProduct(edgeRef.Vertex()->Vec() - edgeVert,
 										 planeNor) /
 					   Vector3DotProduct(planeNor, edgeDir)};
-			if (dist < 0)
+			if (dist >= sEdge.Length())
 			{
-				// break;
-				continue;
+				auto newPos{sEdge.Next()->Vertex()->Vec()};
+				newPos = newPos +
+						 (Vector3Negate(ref.normal) *
+						  Vector3DotProduct(ref.normal,
+											newPos - edgeRef.Vertex()->Vec()));
+				newVerts.emplace_back(newPos.x, newPos.y, newPos.z,
+									  newVerts.size());
 			}
-			else if (dist > sEdge.Length())
-			{
-				newVerts.push_back(*sEdge.Next()->Vertex());
-				DrawLine3D(edgeVert, edgeVert + (edgeDir * dist), BLUE);
-				DrawSphere(edgeVert + (edgeDir * dist), 0.025f, BLUE);
-				// HE::HEdge newEdge{
-				// 	.vertID = static_cast<uint8_t>(newVerts.size() - 1),
-				// 	.twinID = 0,
-				// 	.nextID = static_cast<uint8_t>(newSurface.size() + 1),
-				// 	.faceID = 0,
-				// 	.vertArr = &sVerts,
-				// 	.edgeArr = &surface,
-				// 	.faceArr = nullptr,
-				// };
-				// newSurface.push_back(newEdge);
-				// break;
-				continue;
-			}
-			else
+			else if (dist >= 0)
 			{
 				Vector3 newPos{edgeVert + (edgeDir * dist)};
-				// newPos = newPos +
-				// 		 (Vector3Negate(ref.normal) *
-				// 		  Vector3DotProduct(newPos - edgeRef.Vertex()->Vec(),
-				// 							ref.normal));
+				newPos = newPos +
+						 (Vector3Negate(ref.normal) *
+						  Vector3DotProduct(newPos - edgeRef.Vertex()->Vec(),
+											ref.normal));
 				newVerts.emplace_back(newPos.x, newPos.y, newPos.z,
 									  newSurface.size());
-				// HE::HEdge newEdge{
-				// 	.vertID = static_cast<uint8_t>(newVerts.size() - 1),
-				// 	.twinID = 0,
-				// 	.nextID = static_cast<uint8_t>(newSurface.size() + 1),
-				// 	.faceID = 0,
-				// 	.vertArr = &sVerts,
-				// 	.edgeArr = &surface,
-				// 	.faceArr = nullptr,
-				// };
-				// // std::cout << newSurface.size() + 1 << '\n';
-				// newSurface.push_back(newEdge);
-				// DrawLine3D(edgeVert, edgeVert + (edgeDir * dist), BLUE);
-				// DrawSphere(edgeVert + (edgeDir * dist), 0.025f, BLUE);
-				// break;
 			}
-			//raise(SIGTRAP);
+			if (bothInside)
+			{
+				auto newPos{sEdge.Next()->Vertex()->Vec()};
+				newPos = newPos +
+						 (Vector3Negate(ref.normal) *
+						  Vector3DotProduct(ref.normal,
+											newPos - edgeRef.Vertex()->Vec()));
+				newVerts.emplace_back(newPos.x, newPos.y, newPos.z,
+									  newVerts.size());
+			}
 		}
-		for (auto p : newVerts)
+		std::cout << newVerts.size() << '\n';
+		for (auto point : newVerts)
 		{
-			DrawSphere(p, 0.01f, RED);
+			newSurface.emplace_back(static_cast<uint8_t>(newSurface.size()), 0,
+									static_cast<uint8_t>(newSurface.size() + 1),
+									0, &sVerts, &surface, nullptr);
+			DrawSphere(point.Vec(), 0.01f, RED);
 		}
-		// std::cout << newSurface.size() << '\n';
-		// newSurface[newSurface.size() - 1].nextID = 0; // Close the loop
-		// newSurface[newSurface.size() - 1].vertID = 0;
-		//sVerts = newVerts;
-		//surface = newSurface;
-		//for (auto& edge : surface)
-		//{
-		//	edge.vertArr = &sVerts;
-		//	edge.edgeArr = &surface;
-		//}
-
-		break;
-
-		// for (const auto& edge : incident)
-		// {
-		// 	auto edgeDir{edge.Dir()};
-		// 	auto edgeVert{edge.Next()->Vertex()->Vec()};
-		// 	if (Vector3DotProduct(planeNor, edgeDir) < 0)
-		// 	{
-		// 		edgeVert = edge.Vertex()->Vec();
-		// 		edgeDir = Vector3Negate(edgeDir);
-		// 	}
-		// 	float dist{Vector3DotProduct(edgeRef.Vertex()->Vec() - edgeVert,
-		// 								 planeNor) /
-		// 			   Vector3DotProduct(planeNor, edgeDir)};
-		// 	if (dist < 0 || dist > edge.Length())
-		// 		continue;
-		// 	else
-		// 	{
-		// 		Vector3 newPos{edgeVert + (edgeDir * dist)};
-		// 		newPos = newPos +
-		// 				 (Vector3Negate(ref.normal) *
-		// 				  Vector3DotProduct(newPos - edgeRef.Vertex()->Vec(),
-		// 									ref.normal));
-		// 		DrawSphere(newPos, 0.025f, RED);
-		// 		DrawSphere(edgeVert, 0.025f, GREEN);
-		// 	}
-		// }
+		std::cout << newSurface.size() << "\n\n";
+		newSurface[newSurface.size() - 1].nextID = 0; // Close the loop
+		sVerts.swap(newVerts);
+		// sVerts = newVerts;
+		surface.swap(newSurface);
+		// surface = newSurface;
 	}
-	UnloadMesh(plane);
+	for (auto& edge : surface)
+	{
+		// edge.vertArr = &sVerts;
+		// edge.edgeArr = &surface;
+		DrawLine3D(edge.Vertex()->Vec(), edge.Next()->Vertex()->Vec(), RED);
+		auto start = edge.Next()->Vertex()->Vec();
+		auto end = (Vector3RotateByAxisAngle(Vector3Negate(edge.Dir() * 0.1f),
+											 Vector3Negate(ref.normal),
+											 20.0f * DEG2RAD) +
+					start);
+		DrawLine3D(start, end, RED);
+	}
 
 	// auto* sEdge{surface.data()};
 	// do
@@ -378,7 +300,7 @@ std::optional<RaycastHit> CheckRaycast(const Ray ray, PhysObject& obj)
 		return {};
 	}
 }
-bool IsPointInPoly3D(const Vector3 point, const HE::HFace& poly)
+auto IsPointInPoly3D(const Vector3 point, const HE::HFace& poly) -> bool
 {
 	bool inPoly{false};
 	auto* edge = poly.Edge();

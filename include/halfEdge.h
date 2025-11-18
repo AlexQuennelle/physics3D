@@ -28,7 +28,6 @@ struct HVertex
 
 	HEdge* Edge() const;
 	Vector3 Vec() const { return {this->x, this->y, this->z}; }
-	operator Vector3() { return {this->x, this->y, this->z}; }
 
 	void SetPos(const Vector3 newPos)
 	{
