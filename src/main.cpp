@@ -13,7 +13,7 @@ void Update();
 
 std::unique_ptr<phys::Program> program{nullptr};
 
-int main()
+auto main() -> int
 {
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
 #if defined(PLATFORM_WEB)

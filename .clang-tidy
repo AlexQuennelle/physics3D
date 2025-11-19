@@ -1,8 +1,10 @@
 ---
 Checks: "-*,
+        bugprone-*,
+
+        cert-*,
+
         modernize-*,
-        -modernize-use-trailing-return-type,
-        -modernize-return-braced-init-list,
         -modernize-use-nodiscard,
 
         readability-*,
@@ -17,9 +19,10 @@ Checks: "-*,
         portability-*,
 
         performance-*,
-        -performance-no-int-to-ptr,
 
+        cppcoreguidelines-*,
         -cppcoreguidelines-non-private-member-variables-in-classes,
+        -cppcoreguidelines-avoid-magic-numbers,
 
         misc-*,
         -misc-use-internal-linkage,
@@ -31,8 +34,8 @@ FormatStyle:     file
 
 CheckOptions:
   - key: readability-identifier-length.IgnoredVariableNames
-    value: 'x|y|z'
+    value: 'x|y|z|i'
   - key: readability-identifier-length.IgnoredParameterNames
-    value: 'x|y|z'
+    value: 'x|y|z|i'
   - key: readability-identifier-length.MinimumLoopCounterNameLength
     value: '1'

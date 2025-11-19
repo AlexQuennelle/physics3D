@@ -9,7 +9,6 @@
 #include <cstring>
 #include <imgui.h>
 #include <iostream>
-#include <memory>
 #include <numbers>
 #include <optional>
 #include <raylib.h>
@@ -19,7 +18,9 @@
 namespace phys
 {
 
-Program::Program() : imguiIO(ImGui::GetIO())
+Program::Program()
+	: deltaTime(NAN), cam({.x = 0.0f, .y = 0.0f, .z = 0.0f}),
+	  imguiIO(ImGui::GetIO())
 {
 	SetTextColor(INFO);
 	std::cout << "Initializing World\n";
@@ -76,12 +77,12 @@ void Program::Update()
 				continue;
 			auto obj2 = this->objects[j];
 			std::optional<HitObj> col = CheckCollision(obj1, obj2);
-			if (col.has_value())
-			{
-			}
-			else
-			{
-			}
+			// if (col.has_value())
+			// {
+			// }
+			// else
+			// {
+			// }
 		}
 	}
 	this->ProcessInput();
@@ -108,10 +109,9 @@ void Program::Update()
 			// TODO: Add more info
 			Vector3 pos;
 			Vector3 rot;
-			float scale;
+			float scale = selectedObj->GetScale().x;
 			pos = selectedObj->GetPosition();
 			rot = QuaternionToEuler(selectedObj->GetRotation()) * RAD2DEG;
-			scale = selectedObj->GetScale().x;
 			ImGui::DragFloat3("Position", &pos.x, 0.01f);
 			ImGui::DragFloat3("Rotation", &rot.x, 0.1f);
 			ImGui::DragFloat("Scale", &scale, 0.01f);
@@ -227,13 +227,11 @@ void Program::DebugAddStairObj(Vector3 pos)
 	mesh.indices = nullptr;
 	UnloadModel(model);
 
-	auto col = std::make_shared<CompoundCollider>(CompoundCollider({
-		std::dynamic_pointer_cast<Collider>(
-			CreateBoxCollider(MatrixScale(1.0f, 1.0f, 0.5f) *
-							  MatrixTranslate(0.0f, 0.0f, 0.25f))),
-		std::dynamic_pointer_cast<Collider>(
-			CreateBoxCollider(MatrixScale(1.0f, 0.5f, 0.5f) *
-							  MatrixTranslate(0.0f, -0.25f, -0.25f))),
+	auto col = CompoundCollider(CompoundCollider({
+		CreateBoxCollider(MatrixScale(1.0f, 1.0f, 0.5f) *
+						  MatrixTranslate(0.0f, 0.0f, 0.25f)),
+		CreateBoxCollider(MatrixScale(1.0f, 0.5f, 0.5f) *
+						  MatrixTranslate(0.0f, -0.25f, -0.25f)),
 	}));
 #if defined(PLATFORM_WEB)
 	this->objects.emplace_back(PhysObject(
@@ -241,8 +239,7 @@ void Program::DebugAddStairObj(Vector3 pos)
 		RESOURCES_PATH "shaders/litShader_web.vert",
 		RESOURCES_PATH "shaders/litShader_web.frag"));
 #else
-	this->objects.emplace_back(pos, mesh,
-							   std::dynamic_pointer_cast<Collider>(col),
+	this->objects.emplace_back(pos, mesh, col,
 							   RESOURCES_PATH "shaders/litShader.vert",
 							   RESOURCES_PATH "shaders/litShader.frag");
 #endif // defined ()

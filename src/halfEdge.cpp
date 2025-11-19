@@ -6,63 +6,57 @@
 namespace HE
 {
 
-HEdge* HVertex::Edge() const { return &(*edgeArr)[this->edgeID]; }
+auto HVertex::Edge() const -> HEdge* { return &(*edgeArr)[this->edgeID]; }
 
-HVertex* HEdge::Vertex() const { return &(*vertArr)[this->vertID]; }
-HEdge* HEdge::Twin() const { return &(*edgeArr)[this->twinID]; }
-HEdge* HEdge::Next() const { return &(*edgeArr)[this->nextID]; }
-HFace* HEdge::Face() const { return &(*faceArr)[this->faceID]; }
-Vector3 HEdge::Dir() const
+auto HEdge::Vertex() const -> HVertex* { return &(*vertArr)[this->vertID]; }
+auto HEdge::Twin() const -> HEdge* { return &(*edgeArr)[this->twinID]; }
+auto HEdge::Next() const -> HEdge* { return &(*edgeArr)[this->nextID]; }
+auto HEdge::Face() const -> HFace* { return &(*faceArr)[this->faceID]; }
+auto HEdge::Dir() const -> Vector3
 {
 	return Vector3Normalize(this->Next()->Vertex()->Vec() - Vertex()->Vec());
 }
-Vector3 HEdge::Center() const
+auto HEdge::Center() const -> Vector3
 {
 	return (this->Vertex()->Vec() + this->Next()->Vertex()->Vec()) / 2;
 }
-float HEdge::Length() const
+auto HEdge::Length() const -> float
 {
 	return Vector3Length(this->Vertex()->Vec() - this->Next()->Vertex()->Vec());
 }
 
-HEdge* HFace::Edge() const { return &(*edgeArr)[this->edgeID]; }
-Vector3 HFace::Center() const
+auto HFace::Edge() const -> HEdge* { return &(*edgeArr)[this->edgeID]; }
+auto HFace::Center() const -> Vector3
 {
-	auto* edge{this->Edge()};
 	Vector3 acc;
-	int count{0};
-	do
+	float count{0};
+	for (const auto& edge : *this)
 	{
-		edge = edge->Next();
-		acc = acc + edge->Vertex()->Vec();
+		acc = acc + edge.Vertex()->Vec();
 		count++;
 	}
-	while (edge->Vertex() != this->Edge()->Vertex());
 	return acc / count;
 }
 
 #ifndef NDEBUG
-std::ostream& operator<<(std::ostream& ostr, HVertex vert)
+auto operator<<(std::ostream& ostr, HVertex vert) -> std::ostream&
 {
 	ostr << '(' << vert.x << ", " << vert.y << ", " << vert.z << ')';
 	return ostr;
 }
-std::ostream& operator<<(std::ostream& ostr, HEdge edge)
+auto operator<<(std::ostream& ostr, HEdge edge) -> std::ostream&
 {
 	ostr << *edge.Vertex() << "-->" << *edge.Twin()->Vertex();
 	return ostr;
 }
-std::ostream& operator<<(std::ostream& ostr, HFace face)
+auto operator<<(std::ostream& ostr, HFace face) -> std::ostream&
 {
 	ostr << '(' << face.normal.x << ", " << face.normal.y << ", "
 		 << face.normal.z << ")\t";
-	auto* vert = face.Edge();
-	do
+	for (const auto& edge : face)
 	{
-		vert = vert->Next();
-		ostr << *vert->Vertex();
+		ostr << *edge.Vertex();
 	}
-	while (*face.Edge()->Vertex() != *vert->Vertex());
 	return ostr;
 }
 #endif // !NDEBUG

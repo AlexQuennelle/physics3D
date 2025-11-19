@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <iterator>
 #include <ostream>
 #include <raylib.h>
 #include <raymath.h>
@@ -26,8 +25,8 @@ struct HVertex
 	float z;
 	uint8_t edgeID{0};
 
-	HEdge* Edge() const;
-	Vector3 Vec() const { return {this->x, this->y, this->z}; }
+	auto Edge() const -> HEdge*;
+	auto Vec() const -> Vector3 { return {this->x, this->y, this->z}; }
 
 	void SetPos(const Vector3 newPos)
 	{
@@ -36,7 +35,7 @@ struct HVertex
 		this->z = newPos.z;
 	}
 
-	HVertex& operator*(const Matrix mat)
+	auto operator*(const Matrix mat) -> HVertex&
 	{
 		Vector3 result;
 		result.x = (mat.m0 * x) + (mat.m4 * y) + (mat.m8 * z) + mat.m12;
@@ -47,7 +46,7 @@ struct HVertex
 		this->z = result.z;
 		return *this;
 	};
-	bool operator==(const HVertex& comp) const
+	auto operator==(const HVertex& comp) const -> bool
 	{
 		return this->x == comp.x && this->y == comp.y && this->z == comp.z;
 	}
@@ -62,13 +61,13 @@ struct HEdge
 	uint8_t nextID{0};
 	uint8_t faceID{0};
 
-	HVertex* Vertex() const;
-	HEdge* Twin() const;
-	HEdge* Next() const;
-	HFace* Face() const;
-	Vector3 Dir() const;
-	Vector3 Center() const;
-	float Length() const;
+	auto Vertex() const -> HVertex*;
+	auto Twin() const -> HEdge*;
+	auto Next() const -> HEdge*;
+	auto Face() const -> HFace*;
+	auto Dir() const -> Vector3;
+	auto Center() const -> Vector3;
+	auto Length() const -> float;
 
 	std::vector<HE::HVertex>* vertArr{nullptr};
 	std::vector<HEdge>* edgeArr{nullptr};
@@ -79,8 +78,8 @@ struct HEdge
 		public:
 		Iterator(HEdge* edge) : current(edge->Next()), start(edge) {}
 
-		HEdge& operator*() const { return *current; }
-		Iterator& operator++()
+		auto operator*() const -> HEdge& { return *current; }
+		auto operator++() -> Iterator&
 		{
 			if (this->current != this->start)
 				this->current = this->current->Next();
@@ -88,13 +87,13 @@ struct HEdge
 				this->current = nullptr;
 			return *this;
 		}
-		Iterator operator++(int)
+		auto operator++(int) -> Iterator
 		{
 			Iterator temp = *this;
 			++(*this);
 			return temp;
 		}
-		bool operator==(const Iterator& other) const
+		auto operator==(const Iterator& other) const -> bool
 		{
 			if (this->current == nullptr && other.current == nullptr)
 				return true;
@@ -103,12 +102,12 @@ struct HEdge
 				   (this->current != this->start ||
 					other.current != this->start);
 		}
-		bool operator!=(const Iterator& other) const
+		auto operator!=(const Iterator& other) const -> bool
 		{
 			return !(*this == other);
 		}
 
-		static Iterator EndIter() { return {nullptr, nullptr}; }
+		static auto EndIter() -> Iterator { return {nullptr, nullptr}; }
 
 		private:
 		Iterator(HEdge* edge, HEdge* start) : current(edge), start(start) {}
@@ -116,8 +115,8 @@ struct HEdge
 		HEdge* current;
 		HEdge* start;
 	};
-	Iterator begin() { return {this}; }
-	static Iterator end() { return Iterator::EndIter(); }
+	auto begin() -> Iterator { return {this}; }
+	static auto end() -> Iterator { return Iterator::EndIter(); }
 };
 
 struct HFace
@@ -127,12 +126,12 @@ struct HFace
 	Vector3 normal;
 	uint8_t edgeID{0};
 
-	HEdge* Edge() const;
-	Vector3 Center() const;
+	auto Edge() const -> HEdge*;
+	auto Center() const -> Vector3;
 
-	HEdge::Iterator begin() { return {this->Edge()}; }
-	HEdge::Iterator begin() const { return {this->Edge()}; }
-	static HEdge::Iterator end() { return HEdge::Iterator::EndIter(); }
+	auto begin() -> HEdge::Iterator { return {this->Edge()}; }
+	auto begin() const -> HEdge::Iterator { return {this->Edge()}; }
+	static auto end() -> HEdge::Iterator { return HEdge::Iterator::EndIter(); }
 
 	std::vector<HE::HEdge>* edgeArr{nullptr};
 };
@@ -145,9 +144,9 @@ struct FaceInit
 };
 
 #ifndef NDEBUG
-std::ostream& operator<<(std::ostream& ostr, HVertex vert);
-std::ostream& operator<<(std::ostream& ostr, HEdge edge);
-std::ostream& operator<<(std::ostream& ostr, HFace face);
+auto operator<<(std::ostream& ostr, HVertex vert) -> std::ostream&;
+auto operator<<(std::ostream& ostr, HEdge edge) -> std::ostream&;
+auto operator<<(std::ostream& ostr, HFace face) -> std::ostream&;
 #endif // !NDEBUG
 
 } //namespace HE

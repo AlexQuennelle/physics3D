@@ -9,9 +9,9 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <utility>
+#include <variant>
 #include <vector>
 #ifndef NDEBUG
-#include <csignal>
 #include <iostream>
 //#define VERBOSELOG_COL
 #ifdef VERBOSELOG_COL
@@ -28,14 +28,13 @@ using std::vector;
 using std::ostream;
 #endif
 
-void GetEdgeCrosses(const std::shared_ptr<HullCollider> col1,
-					const std::shared_ptr<HullCollider> col2,
+void GetEdgeCrosses(const HullCollider& col1, const HullCollider& col2,
 					vector<Vector3>& out)
 {
 	// TODO: eliminate duplicates
-	for (auto edge1 : col1->edges)
+	for (auto edge1 : col1.edges)
 	{
-		for (auto edge2 : col2->edges)
+		for (auto edge2 : col2.edges)
 		{
 			out.push_back(Vector3Normalize(
 				Vector3CrossProduct(edge1.Dir(), edge2.Dir())));
@@ -140,22 +139,22 @@ HullCollider::HullCollider(const HullCollider& copy)
 		this->faces.push_back(face);
 	}
 }
-void HullCollider::GetTransformed(const Matrix trans,
-								  vector<Col_Sptr>& out) const
+void HullCollider::GetTransformed(const Matrix trans, vector<Col>& out) const
 {
-	auto newCol = std::make_shared<HullCollider>(HullCollider(*this));
-	for (int i{0}; i < newCol->vertices.size(); i++)
+	// auto newCol = std::make_shared<HullCollider>(HullCollider(*this));
+	HullCollider newCol{HullCollider(*this)};
+	for (int i{0}; i < newCol.vertices.size(); i++)
 	{
-		newCol->vertices[i] = newCol->vertices[i] * trans;
+		newCol.vertices[i] = newCol.vertices[i] * trans;
 	}
-	for (int i{0}; i < newCol->faces.size(); i++)
+	for (int i{0}; i < newCol.faces.size(); i++)
 	{
-		auto newNor = newCol->faces[i].normal * trans;
-		newCol->faces[i].normal = Vector3Normalize(
+		auto newNor = newCol.faces[i].normal * trans;
+		newCol.faces[i].normal = Vector3Normalize(
 			Vector3Subtract(newNor, {trans.m12, trans.m13, trans.m14}));
 	}
-	newCol->origin = newCol->origin * trans;
-	out.push_back(newCol);
+	newCol.origin = newCol.origin * trans;
+	out.emplace_back(newCol);
 }
 void HullCollider::GetNormals(vector<Vector3>& out) const
 {
@@ -164,7 +163,7 @@ void HullCollider::GetNormals(vector<Vector3>& out) const
 		out.push_back(face.normal);
 	}
 }
-Range HullCollider::GetProjection(const Vector3 nor) const
+auto HullCollider::GetProjection(const Vector3 nor) const -> Range
 {
 	Range proj{
 		.min = std::numeric_limits<float>::max(),
@@ -178,7 +177,7 @@ Range HullCollider::GetProjection(const Vector3 nor) const
 	}
 	return proj;
 }
-Vector3 HullCollider::GetSupportPoint(const Vector3& axis) const
+auto HullCollider::GetSupportPoint(const Vector3& axis) const -> Vector3
 {
 	// NOTE: Potentially clean up
 	Vector3 support{};
@@ -219,7 +218,7 @@ void HullCollider::DebugDraw(const Matrix& transform, const Color& col) const
 	DrawSphere(this->origin * transform, 0.025f, col);
 }
 
-std::shared_ptr<HullCollider> CreateBoxCollider(Matrix transform)
+auto CreateBoxCollider(Matrix transform) -> Col
 {
 #ifdef VERBOSELOG_COL
 	std::cout << transform << '\n';
@@ -268,30 +267,37 @@ std::shared_ptr<HullCollider> CreateBoxCollider(Matrix transform)
 	faces[3].indices = {4, 5, 1, 0};
 	faces[4].indices = {4, 6, 7, 5};
 	faces[5].indices = {0, 1, 3, 2};
-	return std::make_shared<HullCollider>(newVerts, faces,
-										  Vector3Zero() * transform);
+	// return std::make_shared<HullCollider>(newVerts, faces,
+	// 									  Vector3Zero() * transform);
+	HullCollider newCol{newVerts,faces,Vector3Zero() * transform};
+	return newCol;
 }
 
-CompoundCollider::CompoundCollider(const vector<Col_Sptr>& cols)
-{
-	this->colliders = cols;
-}
+CompoundCollider::CompoundCollider(const vector<Col>& cols) : colliders(cols) {}
 void CompoundCollider::GetTransformed(const Matrix trans,
-									  vector<Col_Sptr>& out) const
+									  vector<Col>& out) const
 {
 	for (const auto& elem : this->colliders)
 	{
-		elem->GetTransformed(trans, out);
+		// elem->GetTransformed(trans, out);
+		std::visit([trans, &out](const isCollider auto& e) -> void
+		{
+			e.GetTransformed(trans, out);
+		}, elem);
 	}
 }
 void CompoundCollider::GetNormals(vector<Vector3>& out) const
 {
 	for (const auto& col : this->colliders)
 	{
-		col->GetNormals(out);
+		// col->GetNormals(out);
+		std::visit([&out](const isCollider auto& c) -> void
+		{
+			c.GetNormals(out);
+		}, col);
 	}
 }
-Vector3 CompoundCollider::GetSupportPoint(const Vector3& /*axis*/) const
+auto CompoundCollider::GetSupportPoint(const Vector3& /*axis*/) const -> Vector3
 {
 	return {0.0f, 0.0f, 0.0f};
 }
@@ -300,22 +306,26 @@ void CompoundCollider::DebugDraw(const Matrix& transform,
 {
 	for (const auto& col : this->colliders)
 	{
-		col->DebugDraw(transform, colour);
+		// col->DebugDraw(transform, colour);
+		std::visit([transform, colour](const isCollider auto& c) -> void
+		{
+			c.DebugDraw(transform, colour);
+		}, col);
 	}
 }
 
 #ifndef NDEBUG
-ostream& operator<<(ostream& ostr, Vector3 vec)
+auto operator<<(ostream& ostr, Vector3 vec) -> ostream&
 {
 	ostr << '(' << vec.x << ", " << vec.y << ", " << vec.z << ')';
 	return ostr;
 }
-ostream& operator<<(ostream& ostr, Range range)
+auto operator<<(ostream& ostr, Range range) -> ostream&
 {
 	ostr << range.min << "–" << range.max;
 	return ostr;
 }
-ostream& operator<<(ostream& ostr, Matrix mat)
+auto operator<<(ostream& ostr, Matrix mat) -> ostream&
 {
 	Vector3 scale;
 	Vector3 pos;
@@ -324,7 +334,7 @@ ostream& operator<<(ostream& ostr, Matrix mat)
 	std::cout << "[p: " << pos << ", r: " << rot << ", s: " << scale << "]";
 	return ostr;
 }
-ostream& operator<<(ostream& ostr, Quaternion quat)
+auto operator<<(ostream& ostr, Quaternion quat) -> ostream&
 {
 	std::cout << QuaternionToEuler(quat);
 	return ostr;

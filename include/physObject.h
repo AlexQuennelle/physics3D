@@ -5,6 +5,7 @@
 #include <optional>
 #include <raylib.h>
 #include <raymath.h>
+#include <variant>
 
 namespace phys
 {
@@ -24,14 +25,14 @@ class PhysObject
 	 * \param mesh The mesh to render when Draw() is called.
 	 * \param col The Collider to use for physics calculations.
 	 */
-	PhysObject(const Vector3 pos, const Mesh mesh, Col_Sptr col);
+	PhysObject(const Vector3 pos, const Mesh mesh, Col col);
 	/**
 	 * \param pos The initial position of the object in 3D space.
 	 * \param mesh The mesh to render when Draw() is called.
 	 * \param col The Collider to use for physics calculations.
 	 * \param shader A shader to apply when rendering the mesh.
 	 */
-	PhysObject(const Vector3 pos, const Mesh mesh, Col_Sptr col,
+	PhysObject(const Vector3 pos, const Mesh mesh, Col col,
 			   const Shader& shader);
 	/**
 	 * \param pos The initial position of the object in 3D space.
@@ -40,7 +41,7 @@ class PhysObject
 	 * \param fragShader Path to the shader file to load.
 	 * \param vertShader Path to the shader file to load.
 	 */
-	PhysObject(const Vector3 pos, const Mesh mesh, Col_Sptr col,
+	PhysObject(const Vector3 pos, const Mesh mesh, Col col,
 			   const char* vertShader, const char* fragShader);
 
 	void Update();
@@ -50,17 +51,17 @@ class PhysObject
 	 * \returns The composite of the position, rotation, and scale
 	 * transformation matrices.
 	 */
-	[[nodiscard]] Matrix GetTransformM() const
+	auto GetTransformM() const -> Matrix
 	{
-		return MatrixMultiply(MatrixMultiply(scale, rotation), position);
+		return this->scale * this->rotation * this->position;
 	}
 	/** \returns The objects current position in world space. */
-	[[nodiscard]] Vector3 GetPosition() const
+	auto GetPosition() const -> Vector3
 	{
 		return {position.m12, position.m13, position.m14};
 	}
 	/** \returns The object's current rotation in world space. */
-	[[nodiscard]] Quaternion GetRotation() const
+	auto GetRotation() const -> Quaternion
 	{
 		Quaternion rot;
 		Vector3 translation;
@@ -68,7 +69,7 @@ class PhysObject
 		MatrixDecompose(this->rotation, &translation, &rot, &scale);
 		return rot;
 	}
-	[[nodiscard]] Vector3 GetScale() const
+	auto GetScale() const -> Vector3
 	{
 		Quaternion rot;
 		Vector3 translation;
@@ -107,14 +108,22 @@ class PhysObject
 	}
 
 	/** \returns A pointer to the object's physics Collider. */
-	[[nodiscard]] Col_Sptr GetCollider() const { return this->collider; }
-	void GetColliderT(vector<Col_Sptr>& out) const
+	auto GetCollider() const -> Col { return this->collider; }
+	void GetColliderT(vector<Col>& out) const
 	{
-		collider->GetTransformed(this->GetTransformM(), out);
+		// collider.GetTransformed(this->GetTransformM(), out);
+		std::visit([this, &out](isCollider auto& col) -> void
+		{
+			col.GetTransformed(this->GetTransformM(), out);
+		}, this->collider);
 	}
-	void GetColliderT(Matrix trans, vector<Col_Sptr>& out) const
+	void GetColliderT(Matrix trans, vector<Col>& out) const
 	{
-		collider->GetTransformed(trans, out);
+		// collider->GetTransformed(trans, out);
+		std::visit([&out, trans](isCollider auto& col) -> void
+		{
+			col.GetTransformed(trans, out);
+		}, this->collider);
 	}
 	/** Sets the shader to use when drawing the object. */
 	void SetShader(const Shader& newShader)
@@ -135,7 +144,7 @@ class PhysObject
 	Material material;
 	Shader shader;
 
-	Col_Sptr collider;
+	Col collider;
 	Mesh mesh;
 };
 
@@ -155,10 +164,10 @@ struct RaycastHit
 	PhysObject& hitObj;
 };
 
-std::optional<HitObj> CheckCollision(const PhysObject& obj1,
-									 const PhysObject& obj2);
-std::optional<RaycastHit> CheckRaycast(const Ray ray, PhysObject& obj);
+auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
+	-> std::optional<HitObj>;
+auto CheckRaycast(const Ray ray, PhysObject& obj) -> std::optional<RaycastHit>;
 
-PhysObject CreateBoxObject(const Vector3 pos, const Vector3 dims);
+auto CreateBoxObject(const Vector3 pos, const Vector3 dims) -> PhysObject;
 
 } //namespace phys
