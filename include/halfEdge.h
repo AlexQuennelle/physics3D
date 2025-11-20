@@ -20,9 +20,9 @@ struct HVertex
 	// HVertex(const Vector3 vec, uint8_t edge)
 	// 	: HVertex(vec.x, vec.y, vec.z, edge) {};
 
-	float x;
-	float y;
-	float z;
+	float x{};
+	float y{};
+	float z{};
 	uint8_t edgeID{0};
 
 	auto Edge() const -> HEdge*;

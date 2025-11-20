@@ -28,7 +28,7 @@ class Program
 
 	PhysObject* selectedObj{nullptr};
 
-	ImGuiIO& imguiIO;
+	ImGuiIO* imguiIO;
 
 	// NOTE: Remove when creating physics objects from meshes is properly
 	// implemented.

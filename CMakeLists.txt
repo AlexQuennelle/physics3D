@@ -10,6 +10,9 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 # if("${CMAKE_GENERATOR}" STREQUAL "Visual Studio 17 2022") message("Visual
 # Studio Generator") else() # set(CMAKE_CXX_FLAGS "-Wall -Wextra") endif()
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O3;-ffast-math>")
+add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O0;-g>")
+
+# add_compile_options("-fsanitize=address")
 
 # Change this to match the name of the current folder
 project(
@@ -22,6 +25,8 @@ option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 message("Build type: ${CMAKE_BUILD_TYPE}")
 
 add_executable("${CMAKE_PROJECT_NAME}")
+
+# set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 
 set(RAYLIB_VERSION 5.5)
 find_package(raylib ${RAYLIB_VERSION} QUIET)

@@ -20,36 +20,39 @@ namespace phys
 class PhysObject
 {
 	public:
-	/**
-	 * \param pos The initial position of the object in 3D space.
+	/** \param pos The initial position of the object in 3D space.
 	 * \param mesh The mesh to render when Draw() is called.
 	 * \param col The Collider to use for physics calculations.
 	 */
-	PhysObject(const Vector3 pos, const Mesh mesh, Col col);
-	/**
-	 * \param pos The initial position of the object in 3D space.
+	PhysObject(const Vector3 pos, const Mesh mesh, Collider& col);
+	/** \param pos The initial position of the object in 3D space.
 	 * \param mesh The mesh to render when Draw() is called.
 	 * \param col The Collider to use for physics calculations.
 	 * \param shader A shader to apply when rendering the mesh.
 	 */
-	PhysObject(const Vector3 pos, const Mesh mesh, Col col,
+	PhysObject(const Vector3 pos, const Mesh mesh, Collider col,
 			   const Shader& shader);
-	/**
-	 * \param pos The initial position of the object in 3D space.
+	/** \param pos The initial position of the object in 3D space.
 	 * \param mesh The mesh to render when Draw() is called.
 	 * \param col The Collider to use for physics calculations.
 	 * \param fragShader Path to the shader file to load.
 	 * \param vertShader Path to the shader file to load.
 	 */
-	PhysObject(const Vector3 pos, const Mesh mesh, Col col,
+	PhysObject(const Vector3 pos, const Mesh mesh, Collider col,
 			   const char* vertShader, const char* fragShader);
+	PhysObject(const PhysObject&) = default;
+	PhysObject(PhysObject&&) = default;
+
+	~PhysObject() = default;
+
+	auto operator=(const PhysObject&) -> PhysObject& = default;
+	auto operator=(PhysObject&&) -> PhysObject& = default;
 
 	void Update();
 	void Draw() const;
 
-	/**
-	 * \returns The composite of the position, rotation, and scale
-	 * transformation matrices.
+	/** \returns The composite of the position, rotation, and scale
+	 *           transformation matrices.
 	 */
 	auto GetTransformM() const -> Matrix
 	{
@@ -108,8 +111,8 @@ class PhysObject
 	}
 
 	/** \returns A pointer to the object's physics Collider. */
-	auto GetCollider() const -> Col { return this->collider; }
-	void GetColliderT(vector<Col>& out) const
+	auto GetCollider() const -> Collider { return this->collider; }
+	void GetColliderT(vector<Collider>& out) const
 	{
 		// collider.GetTransformed(this->GetTransformM(), out);
 		std::visit([this, &out](isCollider auto& col) -> void
@@ -117,7 +120,7 @@ class PhysObject
 			col.GetTransformed(this->GetTransformM(), out);
 		}, this->collider);
 	}
-	void GetColliderT(Matrix trans, vector<Col>& out) const
+	void GetColliderT(Matrix trans, vector<Collider>& out) const
 	{
 		// collider->GetTransformed(trans, out);
 		std::visit([&out, trans](isCollider auto& col) -> void
@@ -135,17 +138,15 @@ class PhysObject
 	friend void DisplayObjectInfo(PhysObject& obj);
 
 	private:
-	Vector3 velocity;
+	Mesh mesh;
+	Collider collider;
+	Material material;
+	Shader shader{};
 
+	Vector3 velocity{};
 	Matrix position;
 	Matrix rotation;
 	Matrix scale;
-
-	Material material;
-	Shader shader;
-
-	Col collider;
-	Mesh mesh;
 };
 
 // NOTE: This struct needs to be reworked
@@ -153,15 +154,15 @@ class PhysObject
 struct HitObj
 {
 	public:
-	Vector3 HitPos{0.0f, 0.0f, 0.0f};
-	const PhysObject& ThisCol;
-	const PhysObject& OtherCol;
+	Vector3 HitPos{};
+	const PhysObject* ThisCol{nullptr};
+	const PhysObject* OtherCol{nullptr};
 };
 struct RaycastHit
 {
-	float hitDist;
-	Vector3 hitPos;
-	PhysObject& hitObj;
+	float hitDist{};
+	Vector3 hitPos{};
+	PhysObject* hitObj{nullptr};
 };
 
 auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)

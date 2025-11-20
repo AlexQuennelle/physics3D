@@ -20,7 +20,7 @@ namespace phys
 
 Program::Program()
 	: deltaTime(NAN), cam({.x = 0.0f, .y = 0.0f, .z = 0.0f}),
-	  imguiIO(ImGui::GetIO())
+	  imguiIO(&ImGui::GetIO())
 {
 	SetTextColor(INFO);
 	std::cout << "Initializing World\n";
@@ -51,7 +51,7 @@ Program::Program()
 	std::cout << "Done Initializing\n";
 	ClearStyles();
 
-	imguiIO.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	imguiIO->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 }
 
 void Program::Update()
@@ -64,18 +64,18 @@ void Program::Update()
 	BeginMode3D(cam);
 	//objects[1].Rotate(
 	//	QuaternionFromAxisAngle({1.0f, 0.0f, 0.0f}, 1.0f * deltaTime));
-	for (auto obj : this->objects)
+	for (auto& obj : this->objects)
 	{
 		obj.Update();
 	}
 	for (uint32_t i{0}; i < this->objects.size(); i++)
 	{
-		auto obj1 = this->objects[i];
+		const auto& obj1 = this->objects[i];
 		for (uint32_t j{i + 1}; j < this->objects.size(); j++)
 		{
 			if (i == j)
 				continue;
-			auto obj2 = this->objects[j];
+			const auto& obj2 = this->objects[j];
 			std::optional<HitObj> col = CheckCollision(obj1, obj2);
 			// if (col.has_value())
 			// {
@@ -128,7 +128,7 @@ void Program::Update()
 }
 void Program::ProcessInput()
 {
-	if (!imguiIO.WantCaptureMouse)
+	if (!imguiIO->WantCaptureMouse)
 	{
 		if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
 		{
@@ -177,7 +177,7 @@ void Program::ProcessInput()
 					if (hit->hitDist < dist)
 					{
 						dist = hit->hitDist;
-						selectedObj = &hit->hitObj;
+						selectedObj = hit->hitObj;
 					}
 				}
 			}
