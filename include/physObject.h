@@ -10,12 +10,12 @@
 namespace phys
 {
 
-/**
- * Object that interacts with the physics simulation systems. Has a collider for
- * collision detection and resolution, and a mesh and material for rendering.
+/** @brief Object that interacts with the physics simulation systems. Has a
+ *         collider for collision detection and resolution, and a mesh and
+ *         material for rendering.
  *
- * Physics and other logic happens in the Update() method, while rendering
- * happens in the Draw() method.
+ * @note Physics and other logic happens in the Update() method, while rendering
+ *       happens in the Draw() method.
  */
 class PhysObject
 {
