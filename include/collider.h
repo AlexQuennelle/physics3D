@@ -27,7 +27,9 @@ using Collider = std::variant<HullCollider, CompoundCollider>;
 
 struct HitObj;
 struct RaycastHit;
-/** Type representing a range of float values between a min and a max value. */
+/** @brief Type representing a range of float values between a min and a max
+ *         value.
+ */
 struct Range
 {
 	float min;
@@ -55,9 +57,10 @@ template <typename T>
 concept isCollider =
 	requires(const T col, const Matrix mat, vector<Collider>& arr,
 			 const Vector3 vec, vector<Vector3> nors, Color color) {
+		{ col.GetOrigin() } -> std::same_as<Vector3>;
 		{ col.GetTransformed(mat, arr) } -> std::same_as<void>;
 		{ col.GetNormals(nors) } -> std::same_as<void>;
-		{ col.GetProjection(vec) } -> std::same_as<Range>;
+		// { col.GetProjection(vec) } -> std::same_as<Range>;
 		{ col.GetSupportPoint(vec) } -> std::same_as<Vector3>;
 		{ col.DebugDraw(mat, color) } -> std::same_as<void>;
 	};
@@ -70,10 +73,11 @@ class CompoundCollider //: public Collider
 	public:
 	CompoundCollider(const vector<Collider>& cols);
 
+	auto GetOrigin() const -> Vector3 { return this->origin; }
 	void GetTransformed(const Matrix trans, vector<Collider>& out) const;
 	void GetNormals(vector<Vector3>& out) const;
 
-	static auto GetSupportPoint(const Vector3& axis) -> Vector3; // override;
+	static auto GetSupportPoint(const Vector3 axis) -> Vector3; // override;
 
 	static auto GetProjection(const Vector3 /*nor*/) -> Range
 	{
@@ -89,8 +93,8 @@ class CompoundCollider //: public Collider
 };
 static_assert(isCollider<CompoundCollider>);
 
-/** Convex Hull collider */
-class HullCollider //: public Collider
+/** @brief Convex Hull collider */
+class HullCollider
 {
 	public:
 	HullCollider(const vector<HE::HVertex>& verts,
@@ -103,6 +107,7 @@ class HullCollider //: public Collider
 	auto operator=(const HullCollider&) -> HullCollider& = default;
 	auto operator=(HullCollider&&) -> HullCollider& = delete;
 
+	auto GetOrigin() const -> Vector3 { return this->origin; }
 	void GetTransformed(const Matrix trans, vector<Collider>& out) const;
 	void GetNormals(vector<Vector3>& out) const;
 	auto GetProjection(const Vector3 nor) const -> Range;
@@ -110,7 +115,7 @@ class HullCollider //: public Collider
 	/** @brief Apply a transformation matrix to the Collider. */
 	auto operator*(const Matrix& mat) -> HullCollider;
 
-	auto GetSupportPoint(const Vector3& axis) const -> Vector3;
+	auto GetSupportPoint(const Vector3 axis) const -> Vector3;
 	auto GetFace(const uint8_t i) const -> const HE::HFace& { return faces[i]; }
 	auto FaceCount() const -> uint8_t { return this->faces.size(); }
 
@@ -130,7 +135,7 @@ class HullCollider //: public Collider
 };
 static_assert(isCollider<HullCollider>);
 
-/** Creates a rectangular convex hull collider centered on (0, 0, 0). */
+/** @brief Creates a rectangular convex hull collider centered on (0, 0, 0). */
 auto CreateBoxCollider(Matrix transform) -> Collider;
 
 #ifndef NDEBUG

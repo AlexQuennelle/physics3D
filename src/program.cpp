@@ -23,7 +23,7 @@ Program::Program()
 	  imguiIO(&ImGui::GetIO())
 {
 	SetTextColor(INFO);
-	std::cout << "Initializing World\n";
+	std::cout << "Initializing Program\n";
 	ClearStyles();
 	using namespace std::numbers;
 	this->cam = Camera(

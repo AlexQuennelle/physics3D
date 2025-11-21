@@ -11,7 +11,7 @@
 
 void Update();
 
-std::unique_ptr<phys::Program> program{nullptr};
+std::unique_ptr<phys::Program> program{nullptr}; // NOLINT
 
 auto main() -> int
 {

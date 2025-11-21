@@ -16,7 +16,6 @@
 #ifdef VERBOSELOG_COL
 #include "utils.h"
 #endif // VERBOSELOG_COL
-#define breakpoint raise(SIGTRAP);
 #endif // !NDEBUG
 
 namespace phys
@@ -47,10 +46,10 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 	: origin(origin)
 {
 #ifndef NDEBUG
-	std::cout << "new hull\n";
+	// std::cout << "new hull\n";
 #endif // NDEBUG
 
-	for (const auto vert : verts)
+	for (const auto& vert : verts)
 	{
 		this->vertices.push_back(vert);
 		this->vertices.back().edgeArr = &this->edges;
@@ -59,11 +58,12 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 	std::map<VertPair, HE::HEdge> tmpEdges;
 	vector<VertPair> anchors;
 	anchors.resize(faces.size());
+	this->faces.reserve(faces.size());
 	for (auto face : faces)
 	{
 		this->faces.emplace_back(face.normal);
 		this->faces.back().edgeArr = &this->edges;
-		this->faces.reserve(this->faces.size() + face.indices.size());
+		// this->faces.reserve(this->faces.size() + face.indices.size());
 		for (int i{0}; i < face.indices.size(); i++)
 		{
 			VertPair pair{face.indices[i],
@@ -139,9 +139,9 @@ HullCollider::HullCollider(const HullCollider& copy)
 		this->faces.push_back(face);
 	}
 }
-void HullCollider::GetTransformed(const Matrix trans, vector<Collider>& out) const
+void HullCollider::GetTransformed(const Matrix trans,
+								  vector<Collider>& out) const
 {
-	// auto newCol = std::make_shared<HullCollider>(HullCollider(*this));
 	HullCollider newCol{HullCollider(*this)};
 	for (int i{0}; i < newCol.vertices.size(); i++)
 	{
@@ -177,18 +177,16 @@ auto HullCollider::GetProjection(const Vector3 nor) const -> Range
 	}
 	return proj;
 }
-auto HullCollider::GetSupportPoint(const Vector3& axis) const -> Vector3
+auto HullCollider::GetSupportPoint(const Vector3 axis) const -> Vector3
 {
 	// NOTE: Potentially clean up
 	Vector3 support{};
 	float supportVal{-1.0f};
 	for (const auto vert : this->vertices)
 	{
-		if (Vector3DotProduct(
-				axis, Vector3Normalize(vert.Vec() - this->origin)) > supportVal)
+		if (Vector3DotProduct(axis, (vert.Vec() - this->origin)) > supportVal)
 		{
-			supportVal = Vector3DotProduct(
-				axis, Vector3Normalize(vert.Vec() - this->origin));
+			supportVal = Vector3DotProduct(axis, (vert.Vec() - this->origin));
 			support = vert.Vec();
 		}
 	}
@@ -214,6 +212,8 @@ void HullCollider::DebugDraw(const Matrix& transform, const Color& col) const
 				transform;
 			DrawLine3D(start, end, col);
 		}
+		DrawLine3D(face.Center() * transform,
+				   (face.Center() + (face.normal * 0.1f)) * transform, col);
 	}
 	DrawSphere(this->origin * transform, 0.025f, col);
 }
@@ -273,7 +273,9 @@ auto CreateBoxCollider(Matrix transform) -> Collider
 	return {newCol};
 }
 
-CompoundCollider::CompoundCollider(const vector<Collider>& cols) : colliders(cols) {}
+CompoundCollider::CompoundCollider(const vector<Collider>& cols)
+	: colliders(cols)
+{}
 void CompoundCollider::GetTransformed(const Matrix trans,
 									  vector<Collider>& out) const
 {
@@ -297,7 +299,7 @@ void CompoundCollider::GetNormals(vector<Vector3>& out) const
 		}, col);
 	}
 }
-auto CompoundCollider::GetSupportPoint(const Vector3& /*axis*/) -> Vector3
+auto CompoundCollider::GetSupportPoint(const Vector3 /*axis*/) -> Vector3
 {
 	return {0.0f, 0.0f, 0.0f};
 }

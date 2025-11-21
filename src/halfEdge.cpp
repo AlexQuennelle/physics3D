@@ -25,10 +25,13 @@ auto HEdge::Length() const -> float
 	return Vector3Length(this->Vertex()->Vec() - this->Next()->Vertex()->Vec());
 }
 
-auto HFace::Edge() const -> HEdge* { return &(*edgeArr)[this->edgeID]; }
+auto HFace::Edge() const -> HEdge*
+{
+	return &(*edgeArr)[this->edgeID];
+}
 auto HFace::Center() const -> Vector3
 {
-	Vector3 acc;
+	Vector3 acc{};
 	float count{0};
 	for (const auto& edge : *this)
 	{

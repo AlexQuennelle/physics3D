@@ -42,6 +42,7 @@ auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
 		for (const auto& col2 : cols2)
 		{
 			auto faces1 = CheckFaceNors(col1, col2);
+			std::cout << faces1.penetration << '\n';
 			if (faces1.penetration <= 0)
 				continue;
 			auto faces2 = CheckFaceNors(col2, col1);
@@ -66,9 +67,7 @@ auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
 			{
 				std::cout << "Face Collision\n";
 				// Face collision
-				// auto hull1 = std::dynamic_pointer_cast<HullCollider>(col1);
 				const auto& hull1{std::get<0>(col1)};
-				// auto hull2 = std::dynamic_pointer_cast<HullCollider>(col2);
 				const auto& hull2{std::get<0>(col2)};
 				if (faces1.penetration < faces2.penetration)
 				{
@@ -358,16 +357,16 @@ auto IsPointInPoly3D(const Vector3 point, const HE::HFace& poly) -> bool
 auto CheckFaceNors(Collider colA, Collider colB) -> FaceHit
 {
 #ifndef NDEBUG
-	vector<Vector3> nors;
-	std::visit([&nors](const isCollider auto& col) -> void
-	{
-		col.GetNormals(nors);
-	}, colA);
-	srand(static_cast<int>(nors[0].x + nors[1].y));
+	// vector<Vector3> nors;
+	// std::visit([&nors](const isCollider auto& col) -> void
+	// {
+	// 	col.GetNormals(nors);
+	// }, colA);
+	// srand(static_cast<int>(nors[0].x + nors[1].y));
 #endif // !NDEBUG
 	FaceHit hit{};
 	hit.penetration = std::numeric_limits<float>::max();
-	const auto& hull1 = std::get<0>(colA);
+	const HullCollider& hull1 = std::get<0>(colA);
 	for (int i{0}; i < hull1.faces.size(); i++)
 	{
 		Vector3 nor = hull1.faces[i].normal;
@@ -386,15 +385,18 @@ auto CheckFaceNors(Collider colA, Collider colB) -> FaceHit
 		}
 		//DrawLine3D(support, support + (nor * penertration), RED);
 #ifndef NDEBUG
-		//Color color = {
-		//	static_cast<uint8_t>(rand()),
-		//	static_cast<uint8_t>(rand()),
-		//	static_cast<uint8_t>(rand()),
-		//	255,
-		//};
-		//DrawLine3D(col1->origin, col1->origin + nor, color);
-		//DrawSphere(col1->origin + nor, 0.025f, color);
-		//DrawSphere(support, 0.05f, color);
+		// std::visit([support, nor](const isCollider auto& col) -> void
+		// {
+		// 	Color color = {
+		// 		static_cast<uint8_t>(rand()),
+		// 		static_cast<uint8_t>(rand()),
+		// 		static_cast<uint8_t>(rand()),
+		// 		255,
+		// 	};
+		// 	DrawLine3D(col.GetOrigin(), col.GetOrigin() + nor, color);
+		// 	DrawSphere(col.GetOrigin() + nor, 0.025f, color);
+		// 	DrawSphere(support, 0.05f, color);
+		// }, colA);
 #endif // !NDEBUG
 	}
 	return hit;
