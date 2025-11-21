@@ -42,7 +42,6 @@ auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
 		for (const auto& col2 : cols2)
 		{
 			auto faces1 = CheckFaceNors(col1, col2);
-			std::cout << faces1.penetration << '\n';
 			if (faces1.penetration <= 0)
 				continue;
 			auto faces2 = CheckFaceNors(col2, col1);
@@ -172,12 +171,12 @@ auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident) -> void
 	}
 	surface[surface.size() - 1].nextID = 0; // Close the loop
 
-	int loop{0};
+	// int loop{0};
 	for (auto& edgeRef : *ref.Edge())
 	{
-		loop++;
-		if (loop > 3)
-			break;
+		// loop++;
+		// if (loop > 3)
+		// 	break;
 
 		Vector3 planeNor{
 			Vector3Normalize(Vector3CrossProduct(edgeRef.Dir(), ref.normal))};
@@ -219,7 +218,7 @@ auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident) -> void
 			}
 			else if (dist >= 0)
 			{
-				Vector3 newPos{edgeVert + (edgeDir * dist)};
+				Vector3 newPos{edgeVert + (edgeDir * dist * 0.999f)};
 				newPos = newPos +
 						 (Vector3Negate(ref.normal) *
 						  Vector3DotProduct(newPos - edgeRef.Vertex()->Vec(),

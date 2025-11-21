@@ -123,6 +123,8 @@ void Program::Update()
 		ImGui::End();
 	}
 
+	DrawFPS(0, 0);
+
 	rlImGuiEnd();
 	EndDrawing();
 }
