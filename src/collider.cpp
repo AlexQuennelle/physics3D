@@ -42,8 +42,7 @@ void GetEdgeCrosses(const HullCollider& col1, const HullCollider& col2,
 
 HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 						   const vector<HE::FaceInit>& faces,
-						   const Vector3 origin)
-	: origin(origin)
+						   const Vector3 origin) : origin(origin)
 {
 #ifndef NDEBUG
 	// std::cout << "new hull\n";
@@ -83,8 +82,8 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 	for (int i{0}; i < this->faces.size(); i++)
 	{
 		auto face = faces[i];
-		this->faces[i].edgeID =
-			std::distance(tmpEdges.begin(), tmpEdges.find(anchors[i]));
+		this->faces[i].edgeID
+			= std::distance(tmpEdges.begin(), tmpEdges.find(anchors[i]));
 		for (int j{0}; j < face.indices.size(); j++)
 		{
 			VertPair pair{face.indices[j],
@@ -93,14 +92,14 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 						   face.indices[j]};
 			VertPair next{face.indices[(j + 1) % face.indices.size()],
 						  face.indices[(j + 2) % face.indices.size()]};
-			tmpEdges[pair].nextID =
-				std::distance(tmpEdges.begin(), tmpEdges.find(next));
+			tmpEdges[pair].nextID
+				= std::distance(tmpEdges.begin(), tmpEdges.find(next));
 			if (tmpEdges.contains(pairO))
 			{
-				tmpEdges[pair].twinID =
-					std::distance(tmpEdges.begin(), tmpEdges.find(pairO));
-				tmpEdges[pairO].twinID =
-					std::distance(tmpEdges.begin(), tmpEdges.find(pair));
+				tmpEdges[pair].twinID
+					= std::distance(tmpEdges.begin(), tmpEdges.find(pairO));
+				tmpEdges[pairO].twinID
+					= std::distance(tmpEdges.begin(), tmpEdges.find(pair));
 			}
 		}
 	}
@@ -205,11 +204,11 @@ void HullCollider::DebugDraw(const Matrix& transform, const Color& col) const
 		for (const auto& edge : face)
 		{
 			Vector3 start = edge.Twin()->Vertex()->Vec() * transform;
-			Vector3 end =
-				(Vector3RotateByAxisAngle(Vector3Negate(edge.Dir()) * 0.1f,
-										  face.normal, 20.0f * DEG2RAD) +
-				 edge.Twin()->Vertex()->Vec()) *
-				transform;
+			Vector3 end
+				= (Vector3RotateByAxisAngle(Vector3Negate(edge.Dir()) * 0.1f,
+											face.normal, 20.0f * DEG2RAD)
+				   + edge.Twin()->Vertex()->Vec())
+				  * transform;
 			DrawLine3D(start, end, col);
 		}
 		DrawLine3D(face.Center() * transform,
@@ -273,9 +272,9 @@ auto CreateBoxCollider(Matrix transform) -> Collider
 	return {newCol};
 }
 
-CompoundCollider::CompoundCollider(const vector<Collider>& cols)
-	: colliders(cols)
-{}
+CompoundCollider::CompoundCollider(const vector<Collider>& cols) :
+	colliders(cols)
+{ }
 void CompoundCollider::GetTransformed(const Matrix trans,
 									  vector<Collider>& out) const
 {

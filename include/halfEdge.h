@@ -13,6 +13,16 @@ struct HVertex;
 struct HEdge;
 struct HFace;
 
+struct Plane
+{
+	Vector3 pos{};
+	Vector3 nor{};
+};
+inline auto IsPointBehindPlane(Plane plane, Vector3 point) -> bool
+{
+	return Vector3DotProduct(plane.nor, point - plane.pos) > 0;
+}
+
 struct HVertex
 {
 	float x{0.0f};
@@ -123,6 +133,7 @@ struct HFace
 
 	auto Edge() const -> HEdge*;
 	auto Center() const -> Vector3;
+	auto Plane() const -> Plane;
 
 	auto begin() -> HEdge::Iterator { return {this->Edge()}; }
 	auto begin() const -> HEdge::Iterator { return {this->Edge()}; }

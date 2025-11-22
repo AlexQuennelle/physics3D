@@ -18,9 +18,9 @@
 namespace phys
 {
 
-Program::Program()
-	: deltaTime(NAN), cam({.x = 0.0f, .y = 0.0f, .z = 0.0f}),
-	  imguiIO(&ImGui::GetIO())
+Program::Program() :
+	deltaTime(NAN), cam({.x = 0.0f, .y = 0.0f, .z = 0.0f}),
+	imguiIO(&ImGui::GetIO())
 {
 	SetTextColor(INFO);
 	std::cout << "Initializing Program\n";
@@ -100,8 +100,8 @@ void Program::Update()
 
 	bool open = true;
 	//open = selectedObj != nullptr;
-	ImGuiWindowFlags flags =
-		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize;
+	ImGuiWindowFlags flags
+		= ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize;
 	if (selectedObj != nullptr)
 	{
 		if (ImGui::Begin("Selected Object", &open, flags))
@@ -140,9 +140,9 @@ void Program::ProcessInput()
 				DisableCursor();
 			}
 
-			cam.position =
-				Vector3RotateByAxisAngle(cam.position, {0.0f, 1.0f, 0.0f},
-										 -mouseDelta.x * 0.8f * deltaTime);
+			cam.position
+				= Vector3RotateByAxisAngle(cam.position, {0.0f, 1.0f, 0.0f},
+										   -mouseDelta.x * 0.8f * deltaTime);
 			float dAngle = -mouseDelta.y * 0.4f * deltaTime;
 			float currentAngle = Vector3Angle(Vector3Normalize(cam.position),
 											  {0.0f, 1.0f, 0.0f});
@@ -230,10 +230,10 @@ void Program::DebugAddStairObj(Vector3 pos)
 	UnloadModel(model);
 
 	auto col = CompoundCollider(CompoundCollider({
-		CreateBoxCollider(MatrixScale(1.0f, 1.0f, 0.5f) *
-						  MatrixTranslate(0.0f, 0.0f, 0.25f)),
-		CreateBoxCollider(MatrixScale(1.0f, 0.5f, 0.5f) *
-						  MatrixTranslate(0.0f, -0.25f, -0.25f)),
+		CreateBoxCollider(MatrixScale(1.0f, 1.0f, 0.5f)
+						  * MatrixTranslate(0.0f, 0.0f, 0.25f)),
+		CreateBoxCollider(MatrixScale(1.0f, 0.5f, 0.5f)
+						  * MatrixTranslate(0.0f, -0.25f, -0.25f)),
 	}));
 #if defined(PLATFORM_WEB)
 	this->objects.emplace_back(PhysObject(

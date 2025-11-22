@@ -54,16 +54,16 @@ struct EdgeHit
  *         particular set of methods used by the collision detection systems.
  */
 template <typename T>
-concept isCollider =
-	requires(const T col, const Matrix mat, vector<Collider>& arr,
-			 const Vector3 vec, vector<Vector3> nors, Color color) {
-		{ col.GetOrigin() } -> std::same_as<Vector3>;
-		{ col.GetTransformed(mat, arr) } -> std::same_as<void>;
-		{ col.GetNormals(nors) } -> std::same_as<void>;
-		// { col.GetProjection(vec) } -> std::same_as<Range>;
-		{ col.GetSupportPoint(vec) } -> std::same_as<Vector3>;
-		{ col.DebugDraw(mat, color) } -> std::same_as<void>;
-	};
+concept isCollider
+	= requires(const T col, const Matrix mat, vector<Collider>& arr,
+			   const Vector3 vec, vector<Vector3> nors, Color color) {
+		  { col.GetOrigin() } -> std::same_as<Vector3>;
+		  { col.GetTransformed(mat, arr) } -> std::same_as<void>;
+		  { col.GetNormals(nors) } -> std::same_as<void>;
+		  // { col.GetProjection(vec) } -> std::same_as<Range>;
+		  { col.GetSupportPoint(vec) } -> std::same_as<Vector3>;
+		  { col.DebugDraw(mat, color) } -> std::same_as<void>;
+	  };
 
 /** @brief Special type of collider that collects several more simple colliders
  *         together to create complex concave shapes

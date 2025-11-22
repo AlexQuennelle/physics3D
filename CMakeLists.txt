@@ -12,7 +12,7 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O3;-ffast-math>")
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O0;-g>")
 
-# add_compile_options("-fsanitize=undefined")
+add_compile_options("-fsanitize=undefined")
 # add_compile_options("-fsanitize=address")
 
 # Change this to match the name of the current folder
@@ -27,7 +27,7 @@ message("Build type: ${CMAKE_BUILD_TYPE}")
 
 add_executable("${CMAKE_PROJECT_NAME}")
 
-# set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
 # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 
 set(RAYLIB_VERSION 5.5)

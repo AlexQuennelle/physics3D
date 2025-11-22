@@ -25,10 +25,7 @@ auto HEdge::Length() const -> float
 	return Vector3Length(this->Vertex()->Vec() - this->Next()->Vertex()->Vec());
 }
 
-auto HFace::Edge() const -> HEdge*
-{
-	return &(*edgeArr)[this->edgeID];
-}
+auto HFace::Edge() const -> HEdge* { return &(*edgeArr)[this->edgeID]; }
 auto HFace::Center() const -> Vector3
 {
 	Vector3 acc{};
@@ -39,6 +36,10 @@ auto HFace::Center() const -> Vector3
 		count++;
 	}
 	return acc / count;
+}
+auto HFace::Plane() const -> struct Plane
+{
+	return {.pos = this->Edge()->Vertex()->Vec(), .nor = this->normal};
 }
 
 #ifndef NDEBUG
@@ -54,8 +55,14 @@ auto operator<<(std::ostream& ostr, HEdge edge) -> std::ostream&
 }
 auto operator<<(std::ostream& ostr, HFace face) -> std::ostream&
 {
-	ostr << '(' << face.normal.x << ", " << face.normal.y << ", "
-		 << face.normal.z << ")\t";
+	ostr
+		<< '('
+		<< face.normal.x
+		<< ", "
+		<< face.normal.y
+		<< ", "
+		<< face.normal.z
+		<< ")\t";
 	for (const auto& edge : face)
 	{
 		ostr << *edge.Vertex();
