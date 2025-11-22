@@ -39,7 +39,7 @@ struct FaceHit
 {
 	uint8_t id;
 	float penetration;
-	Vector3 suppport;
+	Vector3 support;
 };
 struct EdgeHit
 {

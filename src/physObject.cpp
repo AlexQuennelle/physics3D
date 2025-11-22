@@ -3,6 +3,7 @@
 #include "halfEdge.h"
 
 #include <cassert>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
@@ -46,6 +47,7 @@ auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
 			if (faces1.penetration <= 0)
 				continue;
 			auto faces2 = CheckFaceNors(col2, col1);
+			// auto [id, penetration, support] = CheckFaceNors(col2, col1);
 			if (faces2.penetration <= 0)
 				continue;
 			auto edges = CheckEdgeNors(col1, col2);
@@ -88,16 +90,16 @@ auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
 						}
 					}
 					GenFaceContact(ref, hull2.GetFace(incidentID));
-					DrawLine3D(faces1.suppport,
-							   faces1.suppport
+					DrawLine3D(faces1.support,
+							   faces1.support
 								   + (hull1.GetFace(faces1.id).normal
 									  * faces1.penetration),
 							   RED);
 				}
 				else
 				{
-					DrawLine3D(faces2.suppport,
-							   faces2.suppport
+					DrawLine3D(faces2.support,
+							   faces2.support
 								   + (hull2.GetFace(faces2.id).normal
 									  * faces2.penetration),
 							   RED);
@@ -170,7 +172,7 @@ auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 
 	for (auto& edgeRef : *ref.Edge())
 	{
-		Vector3 planeNor{
+		const Vector3 planeNor{
 			Vector3Normalize(Vector3CrossProduct(edgeRef.Dir(), ref.normal))};
 
 		auto sideTest = [edgeRef, planeNor](Vector3 point) -> bool
@@ -198,7 +200,23 @@ auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 			float dist{
 				Vector3DotProduct(edgeRef.Vertex()->Vec() - edgeVert, planeNor)
 				/ Vector3DotProduct(planeNor, edgeDir)};
-			if (dist >= sEdge.Length())
+
+			if (std::isinf(dist)) // Account for /0 resulting in -inf
+			{
+				// TODO: Potentially find a more elegant solution
+				auto newPos{sEdge.Next()->Vertex()->Vec()};
+				if (!sideTest(newPos))
+				{
+					newPos
+						= newPos
+						  + Vector3Negate(planeNor)
+						  * Vector3DotProduct(
+							  planeNor, newPos - ref.Edge()->Vertex()->Vec());
+				}
+				newVerts.emplace_back(newPos.x, newPos.y, newPos.z,
+									  newVerts.size());
+			}
+			else if (dist >= sEdge.Length())
 			{
 				auto newPos{sEdge.Next()->Vertex()->Vec()};
 				newVerts.emplace_back(newPos.x, newPos.y, newPos.z,
@@ -379,7 +397,7 @@ auto CheckFaceNors(Collider colA, Collider colB) -> FaceHit
 		{
 			hit.penetration = penetration;
 			hit.id = i;
-			hit.suppport = support;
+			hit.support = support;
 		}
 		//DrawLine3D(support, support + (nor * penertration), RED);
 #ifndef NDEBUG
