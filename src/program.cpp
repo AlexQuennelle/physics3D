@@ -77,12 +77,13 @@ void Program::Update()
 				continue;
 			const auto& obj2 = this->objects[j];
 			std::optional<HitObj> col = CheckCollision(obj1, obj2);
-			// if (col.has_value())
-			// {
-			// }
-			// else
-			// {
-			// }
+			if (col.has_value())
+			{
+				col.value();
+			}
+			else
+			{
+			}
 		}
 	}
 	this->ProcessInput();
@@ -210,21 +211,25 @@ void Program::DebugAddStairObj(Vector3 pos)
 {
 	Model model = LoadModel(RESOURCES_PATH "stairs.obj");
 
-	Mesh modelMesh = model.meshes[0];
-	Mesh mesh{0};
+	Mesh modelMesh = *model.meshes;
+	Mesh mesh{
+		0,		 0,		  nullptr, nullptr, nullptr, nullptr,
+		nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+		nullptr, nullptr, 0,	   0,		nullptr,
+	};
 	mesh.vertexCount = modelMesh.vertexCount;
-	mesh.vertices = reinterpret_cast<float*>(
-		std::malloc(mesh.vertexCount * 3 * sizeof(float)));
+	mesh.vertices = static_cast<float*>(std::malloc(
+		static_cast<uint64_t>(mesh.vertexCount * 3) * sizeof(float)));
 	std::memcpy(mesh.vertices, modelMesh.vertices,
-				mesh.vertexCount * 3 * sizeof(float));
-	mesh.texcoords = reinterpret_cast<float*>(
-		std::malloc(mesh.vertexCount * 2 * sizeof(float)));
+				static_cast<uint64_t>(mesh.vertexCount * 3) * sizeof(float));
+	mesh.texcoords = static_cast<float*>(std::malloc(
+		static_cast<uint64_t>(mesh.vertexCount * 2) * sizeof(float)));
 	std::memcpy(mesh.texcoords, modelMesh.texcoords,
-				mesh.vertexCount * 2 * sizeof(float));
-	mesh.normals = reinterpret_cast<float*>(
-		std::malloc(mesh.vertexCount * 3 * sizeof(float)));
+				static_cast<uint64_t>(mesh.vertexCount * 2) * sizeof(float));
+	mesh.normals = static_cast<float*>(std::malloc(
+		static_cast<uint64_t>(mesh.vertexCount * 3) * sizeof(float)));
 	std::memcpy(mesh.normals, modelMesh.normals,
-				mesh.vertexCount * 3 * sizeof(float));
+				static_cast<uint64_t>(mesh.vertexCount * 3) * sizeof(float));
 	mesh.triangleCount = modelMesh.triangleCount;
 	mesh.indices = nullptr;
 	UnloadModel(model);

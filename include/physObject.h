@@ -24,13 +24,13 @@ class PhysObject
 	 *  @param mesh The mesh to render when Draw() is called.
 	 *  @param col The Collider to use for physics calculations.
 	 */
-	PhysObject(const Vector3 pos, const Mesh mesh, Collider& col);
+	PhysObject(const Vector3 pos, const Mesh mesh, const Collider& col);
 	/** @param pos The initial position of the object in 3D space.
 	 *  @param mesh The mesh to render when Draw() is called.
 	 *  @param col The Collider to use for physics calculations.
 	 *  @param shader A shader to apply when rendering the mesh.
 	 */
-	PhysObject(const Vector3 pos, const Mesh mesh, Collider col,
+	PhysObject(const Vector3 pos, const Mesh mesh, const Collider& col,
 			   const Shader& shader);
 	/** @param pos The initial position of the object in 3D space.
 	 *  @param mesh The mesh to render when Draw() is called.
@@ -38,7 +38,7 @@ class PhysObject
 	 *  @param fragShader Path to the shader file to load.
 	 *  @param vertShader Path to the shader file to load.
 	 */
-	PhysObject(const Vector3 pos, const Mesh mesh, Collider col,
+	PhysObject(const Vector3 pos, const Mesh mesh, const Collider& col,
 			   const char* vertShader, const char* fragShader);
 	PhysObject(const PhysObject&) = default;
 	PhysObject(PhysObject&&) = default;
@@ -68,17 +68,17 @@ class PhysObject
 	{
 		Quaternion rot;
 		Vector3 translation;
-		Vector3 scale;
-		MatrixDecompose(this->rotation, &translation, &rot, &scale);
+		Vector3 matScale;
+		MatrixDecompose(this->rotation, &translation, &rot, &matScale);
 		return rot;
 	}
 	auto GetScale() const -> Vector3
 	{
 		Quaternion rot;
 		Vector3 translation;
-		Vector3 scale;
-		MatrixDecompose(this->scale, &translation, &rot, &scale);
-		return scale;
+		Vector3 matScale;
+		MatrixDecompose(this->scale, &translation, &rot, &matScale);
+		return matScale;
 	}
 
 	/** @brief Sets the object's position in world space. */
@@ -169,6 +169,8 @@ struct RaycastHit
 
 auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
 	-> std::optional<HitObj>;
+void CheckFaceCollision(const Collider& colA, const Collider& colB,
+						const FaceHit faces1, const FaceHit faces2);
 auto CheckRaycast(const Ray ray, PhysObject& obj) -> std::optional<RaycastHit>;
 
 auto CreateBoxObject(const Vector3 pos, const Vector3 dims) -> PhysObject;

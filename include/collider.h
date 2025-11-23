@@ -37,14 +37,14 @@ struct Range
 };
 struct FaceHit
 {
-	uint8_t id;
+	uint32_t id;
 	float penetration;
 	Vector3 support;
 };
 struct EdgeHit
 {
-	uint8_t id1;
-	uint8_t id2;
+	uint32_t id1;
+	uint32_t id2;
 	float penetration;
 	Vector3 support;
 	Vector3 normal;
@@ -116,8 +116,11 @@ class HullCollider
 	auto operator*(const Matrix& mat) -> HullCollider;
 
 	auto GetSupportPoint(const Vector3 axis) const -> Vector3;
-	auto GetFace(const uint8_t i) const -> const HE::HFace& { return faces[i]; }
-	auto FaceCount() const -> uint8_t { return this->faces.size(); }
+	auto GetFace(const uint32_t i) const -> const HE::HFace&
+	{
+		return faces[i];
+	}
+	auto FaceCount() const -> uint64_t { return this->faces.size(); }
 
 	friend void GetEdgeCrosses(const HullCollider& col1,
 							   const HullCollider& col2, vector<Vector3>& out);

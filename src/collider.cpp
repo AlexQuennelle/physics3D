@@ -63,7 +63,7 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 		this->faces.emplace_back(face.normal);
 		this->faces.back().edgeArr = &this->edges;
 		// this->faces.reserve(this->faces.size() + face.indices.size());
-		for (int i{0}; i < face.indices.size(); i++)
+		for (uint64_t i{0}; i < face.indices.size(); i++)
 		{
 			VertPair pair{face.indices[i],
 						  face.indices[(i + 1) % face.indices.size()]};
@@ -73,18 +73,19 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 			tmpEdges[pair].edgeArr = &this->edges;
 			tmpEdges[pair].faceArr = &this->faces;
 
-			tmpEdges[pair].faceID = this->faces.size() - 1;
+			tmpEdges[pair].faceID
+				= static_cast<uint8_t>(this->faces.size() - 1);
 			tmpEdges[pair].vertID = face.indices[i];
 			tmpEdges[pair].nextID = pair.second;
 			anchors[this->faces.size() - 1] = pair;
 		}
 	}
-	for (int i{0}; i < this->faces.size(); i++)
+	for (uint64_t i{0}; i < this->faces.size(); i++)
 	{
 		auto face = faces[i];
-		this->faces[i].edgeID
-			= std::distance(tmpEdges.begin(), tmpEdges.find(anchors[i]));
-		for (int j{0}; j < face.indices.size(); j++)
+		this->faces[i].edgeID = static_cast<uint8_t>(
+			std::distance(tmpEdges.begin(), tmpEdges.find(anchors[i])));
+		for (uint64_t j{0}; j < face.indices.size(); j++)
 		{
 			VertPair pair{face.indices[j],
 						  face.indices[(j + 1) % face.indices.size()]};
@@ -92,14 +93,14 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 						   face.indices[j]};
 			VertPair next{face.indices[(j + 1) % face.indices.size()],
 						  face.indices[(j + 2) % face.indices.size()]};
-			tmpEdges[pair].nextID
-				= std::distance(tmpEdges.begin(), tmpEdges.find(next));
+			tmpEdges[pair].nextID = static_cast<uint8_t>(
+				std::distance(tmpEdges.begin(), tmpEdges.find(next)));
 			if (tmpEdges.contains(pairO))
 			{
-				tmpEdges[pair].twinID
-					= std::distance(tmpEdges.begin(), tmpEdges.find(pairO));
-				tmpEdges[pairO].twinID
-					= std::distance(tmpEdges.begin(), tmpEdges.find(pair));
+				tmpEdges[pair].twinID = static_cast<uint8_t>(
+					std::distance(tmpEdges.begin(), tmpEdges.find(pairO)));
+				tmpEdges[pairO].twinID = static_cast<uint8_t>(
+					std::distance(tmpEdges.begin(), tmpEdges.find(pair)));
 			}
 		}
 	}
@@ -107,7 +108,8 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 	for (auto& edge : tmpEdges)
 	{
 		this->edges.push_back(edge.second);
-		this->edges.back().Vertex()->edgeID = this->edges.size() - 1;
+		this->edges.back().Vertex()->edgeID
+			= static_cast<uint8_t>(this->edges.size() - 1);
 		this->edges.back().vertID = edge.second.vertID;
 		this->edges.back().nextID = edge.second.nextID;
 		this->edges.back().vertArr = &this->vertices;
@@ -142,11 +144,11 @@ void HullCollider::GetTransformed(const Matrix trans,
 								  vector<Collider>& out) const
 {
 	HullCollider newCol{HullCollider(*this)};
-	for (int i{0}; i < newCol.vertices.size(); i++)
+	for (uint64_t i{0}; i < newCol.vertices.size(); i++)
 	{
 		newCol.vertices[i] = newCol.vertices[i] * trans;
 	}
-	for (int i{0}; i < newCol.faces.size(); i++)
+	for (uint64_t i{0}; i < newCol.faces.size(); i++)
 	{
 		auto newNor = newCol.faces[i].normal * trans;
 		newCol.faces[i].normal = Vector3Normalize(

@@ -4,6 +4,7 @@ Checks: "-*,
         -bugprone-easily-swappable-parameters,
 
         cert-*,
+        -cert-dcl16-c
 
         modernize-*,
         -modernize-use-nodiscard,

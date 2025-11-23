@@ -14,7 +14,6 @@
 #include <raymath.h>
 #include <rlgl.h>
 #include <set>
-#include <utility>
 #include <variant>
 
 namespace phys
@@ -61,6 +60,7 @@ auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
 			{
 				// Edge collision
 				std::cout << "Edge Collision\n";
+				std::cout << edges.normal << '\n';
 				DrawLine3D(edges.support,
 						   edges.support + (edges.normal * edges.penetration),
 						   GREEN);
@@ -70,40 +70,7 @@ auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
 			else
 			{
 				std::cout << "Face Collision\n";
-				// Face collision
-				const auto& hull1{std::get<0>(col1)};
-				const auto& hull2{std::get<0>(col2)};
-				if (faces1.penetration < faces2.penetration)
-				{
-					const auto& ref = hull1.GetFace(faces1.id);
-					float dot{1.0f};
-					uint8_t incidentID{0};
-					for (int i{0}; i < hull2.FaceCount(); i++)
-					{
-						const auto& face{hull2.GetFace(i)};
-						if (float newDot{
-								Vector3DotProduct(face.normal, ref.normal)};
-							newDot < dot)
-						{
-							dot = newDot;
-							incidentID = i;
-						}
-					}
-					GenFaceContact(ref, hull2.GetFace(incidentID));
-					DrawLine3D(faces1.support,
-							   faces1.support
-								   + (hull1.GetFace(faces1.id).normal
-									  * faces1.penetration),
-							   RED);
-				}
-				else
-				{
-					DrawLine3D(faces2.support,
-							   faces2.support
-								   + (hull2.GetFace(faces2.id).normal
-									  * faces2.penetration),
-							   RED);
-				}
+				CheckFaceCollision(col1, col2, faces1, faces2);
 			}
 			collision |= true;
 		}
@@ -148,6 +115,42 @@ auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
 		}, obj2.GetCollider());
 	}
 	return {};
+}
+void CheckFaceCollision(const Collider& colA, const Collider& colB,
+						const FaceHit faces1, const FaceHit faces2)
+{
+	// Face collision
+	const auto& hull1{std::get<0>(colA)};
+	const auto& hull2{std::get<0>(colB)};
+	if (faces1.penetration < faces2.penetration)
+	{
+		const auto& ref = hull1.GetFace(faces1.id);
+		float dot{1.0f};
+		uint32_t incidentID{0};
+		for (uint32_t i{0}; i < hull2.FaceCount(); i++)
+		{
+			const auto& face{hull2.GetFace(i)};
+			if (float newDot{Vector3DotProduct(face.normal, ref.normal)};
+				newDot < dot)
+			{
+				dot = newDot;
+				incidentID = i;
+			}
+		}
+		GenFaceContact(ref, hull2.GetFace(incidentID));
+		DrawLine3D(faces1.support,
+				   faces1.support
+					   + (hull1.GetFace(faces1.id).normal * faces1.penetration),
+				   RED);
+	}
+	else
+	{
+		DrawLine3D(faces2.support,
+				   faces2.support
+					   + (hull2.GetFace(faces2.id).normal * faces2.penetration),
+				   RED);
+	}
+	// return true;
 }
 auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 	-> vector<Vector3>
@@ -235,7 +238,7 @@ auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 									  newVerts.size());
 			}
 		}
-		for (auto point : newVerts)
+		for ([[maybe_unused]] const auto point : newVerts)
 		{
 			newSurface.emplace_back(static_cast<uint8_t>(newSurface.size()), 0,
 									static_cast<uint8_t>(newSurface.size() + 1),
@@ -275,9 +278,9 @@ auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 							  | rv::transform(transform)
 							  | std::ranges::to<vector>();
 #ifndef NDEBUG
-	for (const auto p : contact)
+	for (const auto point : contact)
 	{
-		DrawSphere(p, 0.01f, RED);
+		DrawSphere(point, 0.01f, RED);
 	}
 #endif // !NDEBUG
 	return contact;
@@ -296,7 +299,7 @@ auto CheckRaycast(const Ray ray, PhysObject& obj) -> std::optional<RaycastHit>
 	for (const auto& collider : colliders)
 	{
 		const HullCollider& hull{std::get<0>(collider)};
-		for (int i{0}; i < hull.FaceCount(); i++)
+		for (uint32_t i{0}; i < hull.FaceCount(); i++)
 		{
 			const auto& face = hull.GetFace(i);
 			if (Vector3DotProduct(face.normal, ray.direction) > 0)
@@ -337,9 +340,8 @@ auto CheckRaycast(const Ray ray, PhysObject& obj) -> std::optional<RaycastHit>
 auto IsPointInPoly3D(const Vector3 point, const HE::HFace& poly) -> bool
 {
 	bool inPoly{false};
-	auto* edge = poly.Edge();
-	Vector3 xAxis = edge->Dir();
-	Vector3 yAxis = (Vector3CrossProduct(xAxis, poly.normal));
+	Vector3 xAxis = poly.Edge()->Dir();
+	Vector3 yAxis = (Vector3CrossProduct(poly.Edge()->Dir(), poly.normal));
 	Vector2 point2D
 		= {Vector3DotProduct(point, xAxis), Vector3DotProduct(point, yAxis)};
 	for (const auto& edge : poly)
@@ -383,7 +385,7 @@ auto CheckFaceNors(Collider colA, Collider colB) -> FaceHit
 	FaceHit hit{};
 	hit.penetration = std::numeric_limits<float>::max();
 	const HullCollider& hull1 = std::get<0>(colA);
-	for (int i{0}; i < hull1.faces.size(); i++)
+	for (uint32_t i{0}; i < hull1.faces.size(); i++)
 	{
 		Vector3 nor = hull1.faces[i].normal;
 		Vector3 support{std::visit([nor](const isCollider auto& col) -> Vector3
@@ -425,7 +427,7 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 	{
 		col.GetNormals(nors);
 	}, colA);
-	srand(static_cast<int>(nors[0].x + nors[1].y));
+	srand(static_cast<uint32_t>(nors[0].x + nors[1].y));
 #endif // !NDEBUG
 	EdgeHit hit{};
 	hit.penetration = std::numeric_limits<float>::max();
@@ -433,10 +435,11 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 	const auto& hull1 = std::get<0>(colA);
 	const auto& hull2 = std::get<0>(colB);
 
-	std::set<int> edges1;
-	std::set<int> edges2;
+	std::set<uint32_t> edges1;
+	std::set<uint32_t> edges2;
 
-	for (int i{0}; i < hull1.edges.size(); i++)
+	std::cout << '\n';
+	for (uint32_t i{0}; i < hull1.edges.size(); i++)
 	{
 		if (edges1.contains(i))
 		{
@@ -445,19 +448,29 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 		auto edge1 = hull1.edges[i];
 		edges1.insert(i);
 		edges1.insert(hull1.edges[i].twinID);
-		for (int j{0}; j < hull2.edges.size(); j++)
+		std::cout << '\n';
+		for (uint32_t j{0}; j < hull2.edges.size(); j++)
 		{
 			if (edges2.contains(j))
+			{
 				continue;
+			}
 
 			auto edge2 = hull2.edges[j];
 			edges2.insert(i);
 
-			Vector3 nor = Vector3Normalize(
-				Vector3CrossProduct(edge1.Dir(), edge2.Dir()));
+			if (std::abs(Vector3DotProduct(edge1.Dir(), edge2.Dir())) >= 0.999f)
+			{
+				continue;
+			}
+
+			std::cout << edge1.Dir() << "->" << edge2.Dir() << " : ";
+			Vector3 nor = Vector3Normalize(Vector3CrossProduct(
+				Vector3Normalize(edge1.Dir()), Vector3Normalize(edge2.Dir())));
 			Vector3 pen
 				= (edge1.Vertex()->Vec() + edge1.Next()->Vertex()->Vec())
 				  / 2.0f;
+			std::cout << nor << '\n';
 
 			if (Vector3DotProduct(nor, Vector3Normalize(pen - hull1.origin))
 				<= 0)
@@ -501,38 +514,25 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 	return hit;
 }
 
-PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Collider& col) :
-	collider(col), mesh(mesh), position(MatrixTranslate(pos.x, pos.y, pos.z)),
+PhysObject::PhysObject(const Vector3 pos, const Mesh mesh,
+					   const Collider& col) :
+	mesh(mesh), collider(col), material(LoadMaterialDefault()),
+	position(MatrixTranslate(pos.x, pos.y, pos.z)),
 	rotation(MatrixRotate({0.0f, 1.0f, 0.0f}, 0.0f)),
-	scale(MatrixScale(1.0f, 1.0f, 1.0f)), material(LoadMaterialDefault())
+	scale(MatrixScale(1.0f, 1.0f, 1.0f))
 {
 
 	UploadMesh(&this->mesh, false);
 }
-PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Collider col,
-					   const Shader& shader) :
-	collider(std::move(col)), mesh(mesh)
+PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, const Collider& col,
+					   const Shader& shader) : phys::PhysObject(pos, mesh, col)
 {
-	this->position = MatrixTranslate(pos.x, pos.y, pos.z);
-	this->rotation = MatrixRotate({0.0f, 1.0f, 0.0f}, 0.0f);
-	this->scale = MatrixScale(1.0f, 1.0f, 1.0f);
-
-	UploadMesh(&this->mesh, false);
-
-	this->material = LoadMaterialDefault();
 	this->SetShader(shader);
 }
-PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, Collider col,
+PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, const Collider& col,
 					   const char* vertShader, const char* fragShader) :
-	collider(std::move(col)), mesh(mesh)
+	phys::PhysObject(pos, mesh, col)
 {
-	this->position = MatrixTranslate(pos.x, pos.y, pos.z);
-	this->rotation = MatrixRotate({0.0f, 1.0f, 0.0f}, 0.0f);
-	this->scale = MatrixScale(1.0f, 1.0f, 1.0f);
-
-	UploadMesh(&this->mesh, false);
-
-	this->material = LoadMaterialDefault();
 	this->shader = LoadShader(vertShader, fragShader);
 	this->material.shader = this->shader;
 }
@@ -562,8 +562,6 @@ auto CreateBoxObject(const Vector3 pos, const Vector3 dims) -> PhysObject
 
 	return {pos, mesh, col, shader};
 }
-
-void DisplayObjectInfo(PhysObject& obj) { }
 
 #ifndef NDEBUG
 auto operator<<(ostream& ostr, HitObj& hit) -> ostream&

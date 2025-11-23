@@ -4,6 +4,7 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <rlImGui.h>
+#include <rlgl.h>
 #if defined(PLATFORM_WEB)
 #include "wasmUtils.h"
 #include <emscripten/emscripten.h>
@@ -18,6 +19,7 @@ auto main() -> int
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
 #if defined(PLATFORM_WEB)
 	InitWindow(500, 500, NAME);
+	rlSetLineWidth(2.0f);
 	rlImGuiSetup(true);
 	world = std::make_unique<phys::World>();
 	requestSize(500, 500);
@@ -25,6 +27,7 @@ auto main() -> int
 #else
 	InitWindow(800, 800, NAME);
 	SetTargetFPS(60);
+	rlSetLineWidth(2.0f);
 	rlImGuiSetup(true);
 	program = std::make_unique<phys::Program>();
 #endif
@@ -46,9 +49,9 @@ auto main() -> int
 
 void Update()
 {
-	//if (IsKeyPressed(KEY_S))
-	//{
-	//	TakeScreenshot("screenshot.png");
-	//}
+	// if (IsKeyPressed(KEY_S))
+	// {
+	// 	TakeScreenshot("screenshot.png");
+	// }
 	program->Update();
 }

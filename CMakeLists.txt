@@ -12,6 +12,13 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O3;-ffast-math>")
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O0;-g>")
 
+set(
+    CMAKE_CXX_FLAGS
+    "-Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align\
+    -Wunused -Woverloaded-virtual -Wpedantic -Wconversion -Wsign-conversion\
+    -Wnull-dereference -Wdouble-promotion -Wformat=2 -Wduplicated-cond\
+    -Wduplicated-branches -Wlogical-op -Wuseless-cast"
+)
 add_compile_options("-fsanitize=undefined")
 # add_compile_options("-fsanitize=address")
 
