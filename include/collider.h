@@ -126,6 +126,7 @@ class HullCollider
 							   const HullCollider& col2, vector<Vector3>& out);
 
 	void DebugDraw(const Matrix& transform, const Color& col) const;
+	void DebugDrawEdge(const uint64_t index) const;
 
 	friend auto CheckFaceNors(Collider colA, Collider colB) -> FaceHit;
 	friend auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit;

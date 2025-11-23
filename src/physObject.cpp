@@ -53,19 +53,22 @@ auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
 			if (edges.penetration <= 0)
 				continue;
 
-			if (edges.penetration
-				< faces1.penetration
-				&& edges.penetration
-				< faces2.penetration)
+			bool isEdgeCol{
+				edges.penetration
+					< faces1.penetration
+					&& edges.penetration
+					< faces2.penetration,
+			};
+			if (isEdgeCol)
 			{
+				auto [id1, id2, penetration, support, normal] = edges;
 				// Edge collision
 				std::cout << "Edge Collision\n";
-				std::cout << edges.normal << '\n';
-				DrawLine3D(edges.support,
-						   edges.support + (edges.normal * edges.penetration),
-						   GREEN);
-				DrawSphere(edges.support + (edges.normal * edges.penetration),
-						   0.01f, GREEN);
+				std::cout << normal << '\n';
+				DrawLine3D(support, support + (normal * penetration), GREEN);
+				DrawSphere(support + (normal * penetration), 0.01f, GREEN);
+				std::get<0>(col1).DebugDrawEdge(id1);
+				std::get<0>(col2).DebugDrawEdge(id2);
 			}
 			else
 			{
@@ -438,7 +441,7 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 	std::set<uint32_t> edges1;
 	std::set<uint32_t> edges2;
 
-	std::cout << '\n';
+	// std::cout << '\n';
 	for (uint32_t i{0}; i < hull1.edges.size(); i++)
 	{
 		if (edges1.contains(i))
@@ -448,7 +451,7 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 		auto edge1 = hull1.edges[i];
 		edges1.insert(i);
 		edges1.insert(hull1.edges[i].twinID);
-		std::cout << '\n';
+		// std::cout << '\n';
 		for (uint32_t j{0}; j < hull2.edges.size(); j++)
 		{
 			if (edges2.contains(j))
@@ -464,13 +467,13 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 				continue;
 			}
 
-			std::cout << edge1.Dir() << "->" << edge2.Dir() << " : ";
+			// std::cout << edge1.Dir() << "->" << edge2.Dir() << " : ";
 			Vector3 nor = Vector3Normalize(Vector3CrossProduct(
 				Vector3Normalize(edge1.Dir()), Vector3Normalize(edge2.Dir())));
 			Vector3 pen
 				= (edge1.Vertex()->Vec() + edge1.Next()->Vertex()->Vec())
 				  / 2.0f;
-			std::cout << nor << '\n';
+			// std::cout << nor << '\n';
 
 			if (Vector3DotProduct(nor, Vector3Normalize(pen - hull1.origin))
 				<= 0)

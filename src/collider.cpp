@@ -218,6 +218,11 @@ void HullCollider::DebugDraw(const Matrix& transform, const Color& col) const
 	}
 	DrawSphere(this->origin * transform, 0.025f, col);
 }
+void HullCollider::DebugDrawEdge(const uint64_t index) const
+{
+	DrawSphere(this->edges[index].Vertex()->Vec(), 0.05f, GREEN);
+	DrawSphere(this->edges[index].Next()->Vertex()->Vec(), 0.05f, GREEN);
+}
 
 auto CreateBoxCollider(Matrix transform) -> Collider
 {
