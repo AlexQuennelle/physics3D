@@ -209,15 +209,18 @@ auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 
 			if (std::isinf(dist)) // Account for /0 resulting in -inf
 			{
+				// BUG: Extra points sometimes show up
 				// TODO: Potentially find a more elegant solution
 				auto newPos{sEdge.Next()->Vertex()->Vec()};
+				std::cout << "test B\n";
 				if (!sideTest(newPos))
 				{
-					newPos
-						= newPos
-						  + Vector3Negate(planeNor)
-						  * Vector3DotProduct(
-							  planeNor, newPos - ref.Edge()->Vertex()->Vec());
+					std::cout << "test C\n";
+					newPos = newPos
+							 + (Vector3Negate(planeNor)
+								* Vector3DotProduct(
+									planeNor,
+									newPos - ref.Edge()->Vertex()->Vec()));
 				}
 				newVerts.emplace_back(newPos.x, newPos.y, newPos.z,
 									  newVerts.size());
@@ -236,11 +239,14 @@ auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 			}
 			if (bothInside)
 			{
+				std::cout << "test A\n";
 				auto newPos{sEdge.Next()->Vertex()->Vec()};
 				newVerts.emplace_back(newPos.x, newPos.y, newPos.z,
 									  newVerts.size());
 			}
+			std::cout << newVerts.size() << '\n';
 		}
+		std::cout << '\n';
 		for ([[maybe_unused]] const auto point : newVerts)
 		{
 			newSurface.emplace_back(static_cast<uint8_t>(newSurface.size()), 0,
