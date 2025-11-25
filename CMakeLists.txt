@@ -7,20 +7,25 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 
-# if("${CMAKE_GENERATOR}" STREQUAL "Visual Studio 17 2022") message("Visual
-# Studio Generator") else() # set(CMAKE_CXX_FLAGS "-Wall -Wextra") endif()
+if("${CMAKE_GENERATOR}" STREQUAL "Ninja")
+    set(WINDOWS TRUE)
+    message("Ninja")
+else() # set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+
+endif()
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O3;-ffast-math>")
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O0;-g>")
 
-set(
-    CMAKE_CXX_FLAGS
+set(CMAKE_CXX_FLAGS
     "-Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align\
     -Wunused -Woverloaded-virtual -Wpedantic -Wconversion -Wsign-conversion\
     -Wnull-dereference -Wdouble-promotion -Wformat=2 -Wduplicated-cond\
     -Wduplicated-branches -Wlogical-op -Wuseless-cast"
 )
-add_compile_options("-fsanitize=undefined")
-# add_compile_options("-fsanitize=address")
+if(NOT WINDOWS)
+    add_compile_options("-fsanitize=undefined")
+    # add_compile_options("-fsanitize=address")
+endif()
 
 # Change this to match the name of the current folder
 project(
@@ -34,8 +39,10 @@ message("Build type: ${CMAKE_BUILD_TYPE}")
 
 add_executable("${CMAKE_PROJECT_NAME}")
 
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
-# set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+if(NOT WINDOWS)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
+    # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+endif()
 
 set(RAYLIB_VERSION 5.5)
 find_package(raylib ${RAYLIB_VERSION} QUIET)
