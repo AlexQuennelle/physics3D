@@ -1,11 +1,14 @@
 #include "physObject.h"
 #include "collider.h"
 #include "halfEdge.h"
+#include "utils.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 #include <limits>
 #include <optional>
@@ -14,12 +17,16 @@
 #include <raymath.h>
 #include <rlgl.h>
 #include <set>
+#include <tuple>
 #include <variant>
 
 namespace phys
 {
 
 using std::optional;
+
+namespace r = std::ranges;
+namespace rv = std::views;
 
 /** @brief Tests if a 3D point planar to a face lies within the polygon
  *         described by its edges.
@@ -64,11 +71,10 @@ auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
 				auto [id1, id2, penetration, support, normal] = edges;
 				// Edge collision
 				std::cout << "Edge Collision\n";
-				std::cout << normal << '\n';
-				DrawLine3D(support, support + (normal * penetration), GREEN);
-				DrawSphere(support + (normal * penetration), 0.01f, GREEN);
-				std::get<0>(col1).DebugDrawEdge(id1);
-				std::get<0>(col2).DebugDrawEdge(id2);
+				// DrawLine3D(support, support + (normal * penetration), GREEN);
+				// DrawSphere(support + (normal * penetration), 0.01f, GREEN);
+				// std::get<0>(col1).DebugDrawEdge(id1);
+				// std::get<0>(col2).DebugDrawEdge(id2);
 			}
 			else
 			{
@@ -81,26 +87,26 @@ auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
 #ifndef NDEBUG
 	//Draw both objects' colliders in the local coordinate space of object 1
 	std::visit([](const isCollider auto& col) -> void
-	{
-		col.DebugDraw(MatrixIdentity(), {255, 255, 255, 255});
-	}, obj1.GetCollider());
-	std::visit([&obj1, &obj2](const isCollider auto& col) -> auto
-	{
-		col.DebugDraw(obj2.GetTransformM() * MatrixInvert(obj1.GetTransformM()),
-					  {255, 255, 255, 255});
-	}, obj2.GetCollider());
+			   { col.DebugDraw(MatrixIdentity(), {255, 255, 255, 255}); },
+			   obj1.GetCollider());
+	std::visit(
+		[&obj1, &obj2](const isCollider auto& col) -> auto
+		{
+			col.DebugDraw(obj2.GetTransformM()
+							  * MatrixInvert(obj1.GetTransformM()),
+						  {255, 255, 255, 255});
+		},
+		obj2.GetCollider());
 #endif // !NDEBUG
 	if (collision)
 	{
 		// NOTE: Debug visualization code
 		std::visit([&obj1](const isCollider auto& col) -> auto
-		{
-			col.DebugDraw(obj1.GetTransformM(), {255, 0, 0, 255});
-		}, obj1.GetCollider());
+				   { col.DebugDraw(obj1.GetTransformM(), {255, 0, 0, 255}); },
+				   obj1.GetCollider());
 		std::visit([&obj2](const isCollider auto& col) -> auto
-		{
-			col.DebugDraw(obj2.GetTransformM(), {255, 0, 0, 255});
-		}, obj2.GetCollider());
+				   { col.DebugDraw(obj2.GetTransformM(), {255, 0, 0, 255}); },
+				   obj2.GetCollider());
 		HitObj hitObj{
 			.HitPos = {0.0f, 0.0f, 0.0f}, .ThisCol = &obj1, .OtherCol = &obj2};
 		return hitObj;
@@ -109,13 +115,11 @@ auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
 	{
 		// NOTE: Debug visualization code
 		std::visit([&obj1](const isCollider auto& col) -> auto
-		{
-			col.DebugDraw(obj1.GetTransformM(), {0, 255, 0, 255});
-		}, obj1.GetCollider());
+				   { col.DebugDraw(obj1.GetTransformM(), {0, 255, 0, 255}); },
+				   obj1.GetCollider());
 		std::visit([&obj2](const isCollider auto& col) -> auto
-		{
-			col.DebugDraw(obj2.GetTransformM(), {0, 255, 0, 255});
-		}, obj2.GetCollider());
+				   { col.DebugDraw(obj2.GetTransformM(), {0, 255, 0, 255}); },
+				   obj2.GetCollider());
 	}
 	return {};
 }
@@ -281,7 +285,6 @@ auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 			   + Vector3Negate(nor)
 			   * Vector3DotProduct(nor, vert.Vec() - refPoint);
 	};
-	namespace rv = std::views;
 	vector<Vector3> contact = sVerts
 							  | rv::filter(filter)
 							  | rv::transform(transform)
@@ -298,9 +301,8 @@ auto CheckRaycast(const Ray ray, PhysObject& obj) -> std::optional<RaycastHit>
 {
 	vector<Collider> colliders;
 	std::visit([&obj, &colliders](const isCollider auto& col) -> auto
-	{
-		col.GetTransformed(obj.GetTransformM(), colliders);
-	}, obj.GetCollider());
+			   { col.GetTransformed(obj.GetTransformM(), colliders); },
+			   obj.GetCollider());
 	RaycastHit hitObj{.hitDist = std::numeric_limits<float>::max(),
 					  .hitPos = Vector3Zero(),
 					  .hitObj = &obj};
@@ -397,10 +399,9 @@ auto CheckFaceNors(Collider colA, Collider colB) -> FaceHit
 	for (uint32_t i{0}; i < hull1.faces.size(); i++)
 	{
 		Vector3 nor = hull1.faces[i].normal;
-		Vector3 support{std::visit([nor](const isCollider auto& col) -> Vector3
-		{
-			return col.GetSupportPoint(Vector3Negate(nor));
-		}, colB)};
+		Vector3 support{std::visit(
+			[nor](const isCollider auto& col) -> Vector3
+			{ return col.GetSupportPoint(Vector3Negate(nor)); }, colB)};
 		float penetration
 			= Vector3DotProduct(hull1.faces[i].Edge()->Vertex()->Vec(), nor)
 			  - Vector3DotProduct(support, nor);
@@ -433,16 +434,14 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 #ifndef NDEBUG
 	vector<Vector3> nors;
 	std::visit([&nors](const isCollider auto& col) -> auto
-	{
-		col.GetNormals(nors);
-	}, colA);
+			   { col.GetNormals(nors); }, colA);
 	srand(static_cast<uint32_t>(nors[0].x + nors[1].y));
 #endif // !NDEBUG
 	EdgeHit hit{};
 	hit.penetration = std::numeric_limits<float>::max();
 
-	const auto& hull1 = std::get<0>(colA);
-	const auto& hull2 = std::get<0>(colB);
+	const HullCollider& hull1 = std::get<0>(colA);
+	const HullCollider& hull2 = std::get<0>(colB);
 
 	std::set<uint32_t> edges1;
 	std::set<uint32_t> edges2;
@@ -468,7 +467,9 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 			auto edge2 = hull2.edges[j];
 			edges2.insert(i);
 
-			if (std::abs(Vector3DotProduct(edge1.Dir(), edge2.Dir())) >= 0.999f)
+			// if (std::abs(Vector3DotProduct(edge1.Dir(), edge2.Dir())) >=
+			// 0.999f)
+			if (Vector3Equivalent(edge1.Dir(), edge2.Dir()))
 			{
 				continue;
 			}
@@ -487,17 +488,16 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 				nor = Vector3Negate(nor);
 			}
 
-			Vector3 support{
-				std::visit([nor](const isCollider auto& col) -> Vector3
-			{
-				return col.GetSupportPoint(Vector3Negate(nor));
-			}, colB)};
-			float penetration
-				= std::visit([nor, support](const isCollider auto& col) -> float
-			{
-				return col.GetProjection(nor).max
-					   - Vector3DotProduct(support, nor);
-			}, colA);
+			Vector3 support{std::visit(
+				[nor](const isCollider auto& col) -> Vector3
+				{ return col.GetSupportPoint(Vector3Negate(nor)); }, colB)};
+			float penetration = std::visit(
+				[nor, support](const isCollider auto& col) -> float
+				{
+					return col.GetProjection(nor).max
+						   - Vector3DotProduct(support, nor);
+				},
+				colA);
 
 			if (penetration < hit.penetration)
 			{
@@ -520,6 +520,43 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 #endif // !NDEBUG
 		}
 	}
+
+	auto normalizeDirs = [&hull2, &hull1](auto nor) -> auto
+		{
+			auto dir = hull2.origin - hull1.origin;
+			if (Vector3DotProduct(nor, dir) >= 0)
+				nor = Vector3Negate(nor);
+			return nor;
+		};
+	auto getPenetration = [&hull1](auto pair) -> EdgeHit
+		{
+			return {
+				.id1 = 0,
+				.id2 = 0,
+				.penetration = hull1.GetProjection(pair.first).max
+				- Vector3DotProduct(pair.first, pair.second),
+				.support = pair.second,
+				.normal = pair.first,
+			};
+		};
+	auto edgeNors = GetEdgeCrosses(hull1, hull2);
+	auto var = edgeNors
+			   | rv::transform(normalizeDirs)
+			   | rv::transform(
+				   [&hull2](auto nor) -> std::pair<Vector3, Vector3>
+				   { return {nor, hull2.GetSupportPoint(Vector3Negate(nor))}; })
+			   | rv::transform(getPenetration)
+			   | r::to<vector<EdgeHit>>();
+	EdgeHit newHit = *r::min_element(var, {}, &EdgeHit::penetration);
+
+	DrawLine3D(newHit.support,
+			   newHit.support + (newHit.normal * newHit.penetration), BLACK);
+	DrawLine3D(hit.support, hit.support + (hit.normal * hit.penetration),
+			   BLACK);
+	DrawSphere(newHit.support, 0.01f, BLACK);
+
+	std::cout << hit.normal << " == " << newHit.normal << '\n';
+
 	return hit;
 }
 

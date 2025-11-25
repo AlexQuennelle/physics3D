@@ -122,8 +122,8 @@ class HullCollider
 	}
 	auto FaceCount() const -> uint64_t { return this->faces.size(); }
 
-	friend void GetEdgeCrosses(const HullCollider& col1,
-							   const HullCollider& col2, vector<Vector3>& out);
+	friend auto GetEdgeCrosses(const HullCollider& col1,
+							   const HullCollider& col2) -> vector<Vector3>;
 
 	void DebugDraw(const Matrix& transform, const Color& col) const;
 	void DebugDrawEdge(const uint64_t index) const;
@@ -135,6 +135,7 @@ class HullCollider
 	vector<HE::HEdge> edges;
 	vector<HE::HVertex> vertices;
 	vector<HE::HFace> faces;
+	vector<Vector3> edgeDirs;
 	Vector3 origin{0.0f, 0.0f, 0.0f};
 };
 static_assert(isCollider<HullCollider>);

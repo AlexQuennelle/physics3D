@@ -1,12 +1,18 @@
 #include "collider.h"
 #include "halfEdge.h"
+#include "utils.h"
 
+#include <cassert>
+#include <csignal>
 #include <cstdint>
+#include <format>
 #include <iterator>
 #include <limits>
 #include <map>
+#include <ranges>
 #include <raylib.h>
 #include <raymath.h>
+#include <set>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -21,23 +27,40 @@
 namespace phys
 {
 
+namespace r = std::ranges;
+namespace rv = std::ranges::views;
+
 using std::vector;
 #ifndef NDEBUG
 using std::ostream;
 #endif
 
-void GetEdgeCrosses(const HullCollider& col1, const HullCollider& col2,
-					vector<Vector3>& out)
+auto GetEdgeCrosses(const HullCollider& col1, const HullCollider& col2)
+	-> vector<Vector3>
 {
-	// TODO: eliminate duplicates
-	for (auto edge1 : col1.edges)
+	std::cout << '\n';
+	auto crosses = [](auto pair) -> Vector3
 	{
-		for (auto edge2 : col2.edges)
-		{
-			out.push_back(Vector3Normalize(
-				Vector3CrossProduct(edge1.Dir(), edge2.Dir())));
-		}
-	}
+		auto cross = Vector3Normalize(
+			Vector3CrossProduct(std::get<0>(pair), std::get<1>(pair)));
+		std::cout
+			<< std::get<0>(pair)
+			<< " x "
+			<< std::get<1>(pair)
+			<< " = "
+			<< cross
+			<< '\n';
+		return cross;
+	};
+	auto deDupe = [](auto pair) -> bool
+	{
+		return !Vector3Equivalent(std::get<0>(pair), std::get<1>(pair));
+	};
+	auto tmp = rv::cartesian_product(col1.edgeDirs, col2.edgeDirs)
+			   | rv::filter(deDupe)
+			   | rv::transform(crosses)
+			   | r::to<std::vector<Vector3>>();
+	return {tmp.begin(), tmp.end()};
 }
 
 HullCollider::HullCollider(const vector<HE::HVertex>& verts,
@@ -48,13 +71,17 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 	// std::cout << "new hull\n";
 #endif // NDEBUG
 
-	for (const auto& vert : verts)
+	auto initVerts = [this](auto vert) -> auto
 	{
-		this->vertices.push_back(vert);
-		this->vertices.back().edgeArr = &this->edges;
-	}
+		vert.edgeArr = &this->edges;
+		return vert;
+	};
+	this->vertices
+		= verts | rv::transform(initVerts) | r::to<vector<HE::HVertex>>();
+
 	using VertPair = std::pair<uint8_t, uint8_t>;
 	std::map<VertPair, HE::HEdge> tmpEdges;
+	std::set<VertPair> uniqueEdges;
 	vector<VertPair> anchors;
 	anchors.resize(faces.size());
 	this->faces.reserve(faces.size());
@@ -62,7 +89,6 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 	{
 		this->faces.emplace_back(face.normal);
 		this->faces.back().edgeArr = &this->edges;
-		// this->faces.reserve(this->faces.size() + face.indices.size());
 		for (uint64_t i{0}; i < face.indices.size(); i++)
 		{
 			VertPair pair{face.indices[i],
@@ -78,6 +104,12 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 			tmpEdges[pair].vertID = face.indices[i];
 			tmpEdges[pair].nextID = pair.second;
 			anchors[this->faces.size() - 1] = pair;
+
+			if (!uniqueEdges.contains(pair)
+				&& !uniqueEdges.contains({pair.second, pair.first}))
+			{
+				uniqueEdges.emplace(pair);
+			}
 		}
 	}
 	for (uint64_t i{0}; i < this->faces.size(); i++)
@@ -104,20 +136,31 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 			}
 		}
 	}
-	this->edges.reserve(tmpEdges.size());
-	for (auto& edge : tmpEdges)
+
+	auto getEdgeDir = [this](auto pair) -> Vector3
 	{
-		this->edges.push_back(edge.second);
-		this->edges.back().Vertex()->edgeID
-			= static_cast<uint8_t>(this->edges.size() - 1);
-		this->edges.back().vertID = edge.second.vertID;
-		this->edges.back().nextID = edge.second.nextID;
-		this->edges.back().vertArr = &this->vertices;
-		this->edges.back().edgeArr = &this->edges;
-		this->edges.back().faceArr = &this->faces;
-	}
+		return this->vertices[pair.first].Vec()
+			   - this->vertices[pair.second].Vec();
+	};
+	this->edgeDirs = uniqueEdges
+					 | rv::transform(getEdgeDir)
+					 | rv::transform(Vector3Normalize)
+					 | r::to<vector<Vector3>>();
+
+	auto initEdge = [this](HE::HEdge edge) -> HE::HEdge
+	{
+		edge.Vertex()->edgeID = static_cast<uint8_t>(this->edges.size() - 1);
+		edge.vertArr = &this->vertices;
+		edge.edgeArr = &this->edges;
+		edge.faceArr = &this->faces;
+		return edge;
+	};
+	this->edges = tmpEdges
+				  | rv::transform([](auto edge) -> auto { return edge.second; })
+				  | rv::transform(initEdge)
+				  | r::to<vector<HE::HEdge>>();
 }
-HullCollider::HullCollider(const HullCollider& copy)
+HullCollider::HullCollider(const HullCollider& copy) : edgeDirs(copy.edgeDirs)
 {
 	this->vertices.reserve(copy.vertices.size());
 	for (auto vert : copy.vertices)
@@ -153,6 +196,14 @@ void HullCollider::GetTransformed(const Matrix trans,
 		auto newNor = newCol.faces[i].normal * trans;
 		newCol.faces[i].normal = Vector3Normalize(
 			Vector3Subtract(newNor, {trans.m12, trans.m13, trans.m14}));
+	}
+	for (auto& dir : newCol.edgeDirs)
+	{
+		Vector3 translation;
+		Quaternion rotation;
+		Vector3 scale;
+		MatrixDecompose(trans, &translation, &rotation, &scale);
+		dir = dir * QuaternionToMatrix(rotation);
 	}
 	newCol.origin = newCol.origin * trans;
 	out.emplace_back(newCol);
@@ -289,9 +340,7 @@ void CompoundCollider::GetTransformed(const Matrix trans,
 	{
 		// elem->GetTransformed(trans, out);
 		std::visit([trans, &out](const isCollider auto& col) -> void
-		{
-			col.GetTransformed(trans, out);
-		}, elem);
+				   { col.GetTransformed(trans, out); }, elem);
 	}
 }
 void CompoundCollider::GetNormals(vector<Vector3>& out) const
@@ -300,9 +349,7 @@ void CompoundCollider::GetNormals(vector<Vector3>& out) const
 	{
 		// col->GetNormals(out);
 		std::visit([&out](const isCollider auto& col) -> void
-		{
-			col.GetNormals(out);
-		}, col);
+				   { col.GetNormals(out); }, col);
 	}
 }
 auto CompoundCollider::GetSupportPoint(const Vector3 /*axis*/) -> Vector3
@@ -316,9 +363,7 @@ void CompoundCollider::DebugDraw(const Matrix& transform,
 	{
 		// col->DebugDraw(transform, colour);
 		std::visit([transform, colour](const isCollider auto& col) -> void
-		{
-			col.DebugDraw(transform, colour);
-		}, col);
+				   { col.DebugDraw(transform, colour); }, col);
 	}
 }
 

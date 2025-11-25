@@ -28,7 +28,9 @@ struct HVertex
 	float x{0.0f};
 	float y{0.0f};
 	float z{0.0f};
+
 	uint8_t edgeID{0};
+	std::vector<HE::HEdge>* edgeArr{nullptr};
 
 	auto Edge() const -> HEdge*;
 	auto Vec() const -> Vector3 { return {this->x, this->y, this->z}; }
@@ -55,8 +57,6 @@ struct HVertex
 	{
 		return this->x == comp.x && this->y == comp.y && this->z == comp.z;
 	}
-
-	std::vector<HE::HEdge>* edgeArr{nullptr};
 };
 
 struct HEdge
