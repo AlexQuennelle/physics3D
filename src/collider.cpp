@@ -43,13 +43,6 @@ auto GetEdgeCrosses(const HullCollider& col1, const HullCollider& col2)
 	{
 		auto cross = Vector3Normalize(
 			Vector3CrossProduct(std::get<0>(pair), std::get<1>(pair)));
-		std::cout
-			<< std::get<0>(pair)
-			<< " x "
-			<< std::get<1>(pair)
-			<< " = "
-			<< cross
-			<< '\n';
 		return cross;
 	};
 	auto deDupe = [](auto pair) -> bool

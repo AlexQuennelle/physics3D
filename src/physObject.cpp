@@ -1,14 +1,11 @@
 #include "physObject.h"
 #include "collider.h"
 #include "halfEdge.h"
-#include "utils.h"
 
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
-#include <functional>
 #include <iostream>
 #include <limits>
 #include <optional>
@@ -16,8 +13,6 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
-#include <set>
-#include <tuple>
 #include <variant>
 
 namespace phys
