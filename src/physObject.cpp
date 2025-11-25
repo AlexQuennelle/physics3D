@@ -431,131 +431,41 @@ auto CheckFaceNors(Collider colA, Collider colB) -> FaceHit
 }
 auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 {
-#ifndef NDEBUG
-	vector<Vector3> nors;
-	std::visit([&nors](const isCollider auto& col) -> auto
-			   { col.GetNormals(nors); }, colA);
-	srand(static_cast<uint32_t>(nors[0].x + nors[1].y));
-#endif // !NDEBUG
-	EdgeHit hit{};
-	hit.penetration = std::numeric_limits<float>::max();
-
 	const HullCollider& hull1 = std::get<0>(colA);
 	const HullCollider& hull2 = std::get<0>(colB);
 
-	std::set<uint32_t> edges1;
-	std::set<uint32_t> edges2;
-
-	// std::cout << '\n';
-	for (uint32_t i{0}; i < hull1.edges.size(); i++)
-	{
-		if (edges1.contains(i))
-		{
-			continue;
-		}
-		auto edge1 = hull1.edges[i];
-		edges1.insert(i);
-		edges1.insert(hull1.edges[i].twinID);
-		// std::cout << '\n';
-		for (uint32_t j{0}; j < hull2.edges.size(); j++)
-		{
-			if (edges2.contains(j))
-			{
-				continue;
-			}
-
-			auto edge2 = hull2.edges[j];
-			edges2.insert(i);
-
-			// if (std::abs(Vector3DotProduct(edge1.Dir(), edge2.Dir())) >=
-			// 0.999f)
-			if (Vector3Equivalent(edge1.Dir(), edge2.Dir()))
-			{
-				continue;
-			}
-
-			// std::cout << edge1.Dir() << "->" << edge2.Dir() << " : ";
-			Vector3 nor = Vector3Normalize(Vector3CrossProduct(
-				Vector3Normalize(edge1.Dir()), Vector3Normalize(edge2.Dir())));
-			Vector3 pen
-				= (edge1.Vertex()->Vec() + edge1.Next()->Vertex()->Vec())
-				  / 2.0f;
-			// std::cout << nor << '\n';
-
-			if (Vector3DotProduct(nor, Vector3Normalize(pen - hull1.origin))
-				<= 0)
-			{
-				nor = Vector3Negate(nor);
-			}
-
-			Vector3 support{std::visit(
-				[nor](const isCollider auto& col) -> Vector3
-				{ return col.GetSupportPoint(Vector3Negate(nor)); }, colB)};
-			float penetration = std::visit(
-				[nor, support](const isCollider auto& col) -> float
-				{
-					return col.GetProjection(nor).max
-						   - Vector3DotProduct(support, nor);
-				},
-				colA);
-
-			if (penetration < hit.penetration)
-			{
-				hit.penetration = penetration;
-				hit.id1 = i;
-				hit.id2 = j;
-				hit.support = support;
-				hit.normal = nor;
-			}
-#ifndef NDEBUG
-			//Color color = {
-			//	static_cast<uint8_t>(rand()),
-			//	static_cast<uint8_t>(rand()),
-			//	static_cast<uint8_t>(rand()),
-			//	255,
-			//};
-			//DrawLine3D(p, p + nor, color);
-			//DrawSphere(p + nor, 0.025f, color);
-			//DrawSphere(support, 0.05f, color);
-#endif // !NDEBUG
-		}
-	}
-
 	auto normalizeDirs = [&hull2, &hull1](auto nor) -> auto
-		{
-			auto dir = hull2.origin - hull1.origin;
-			if (Vector3DotProduct(nor, dir) >= 0)
-				nor = Vector3Negate(nor);
-			return nor;
-		};
+	{
+		auto dir = hull2.origin - hull1.origin;
+		if (Vector3DotProduct(nor, dir) >= 0)
+			nor = Vector3Negate(nor);
+		return nor;
+	};
+	auto supportPoint = [&hull2](auto nor) -> std::pair<Vector3, Vector3>
+	{
+		return {nor, hull2.GetSupportPoint(Vector3Negate(nor))};
+	};
 	auto getPenetration = [&hull1](auto pair) -> EdgeHit
-		{
-			return {
-				.id1 = 0,
-				.id2 = 0,
-				.penetration = hull1.GetProjection(pair.first).max
-				- Vector3DotProduct(pair.first, pair.second),
-				.support = pair.second,
-				.normal = pair.first,
-			};
+	{
+		return {
+			.id1 = 0,
+			.id2 = 0,
+			.penetration = hull1.GetProjection(pair.first).max
+						   - Vector3DotProduct(pair.first, pair.second),
+			.support = pair.second,
+			.normal = pair.first,
 		};
-	auto edgeNors = GetEdgeCrosses(hull1, hull2);
-	auto var = edgeNors
-			   | rv::transform(normalizeDirs)
-			   | rv::transform(
-				   [&hull2](auto nor) -> std::pair<Vector3, Vector3>
-				   { return {nor, hull2.GetSupportPoint(Vector3Negate(nor))}; })
-			   | rv::transform(getPenetration)
-			   | r::to<vector<EdgeHit>>();
-	EdgeHit newHit = *r::min_element(var, {}, &EdgeHit::penetration);
+	};
+	auto nors = GetEdgeCrosses(hull1, hull2)
+				| rv::transform(normalizeDirs)
+				| rv::transform(supportPoint)
+				| rv::transform(getPenetration)
+				| r::to<vector<EdgeHit>>();
+	EdgeHit hit = *r::min_element(nors, {}, &EdgeHit::penetration);
 
-	DrawLine3D(newHit.support,
-			   newHit.support + (newHit.normal * newHit.penetration), BLACK);
 	DrawLine3D(hit.support, hit.support + (hit.normal * hit.penetration),
 			   BLACK);
-	DrawSphere(newHit.support, 0.01f, BLACK);
-
-	std::cout << hit.normal << " == " << newHit.normal << '\n';
+	DrawSphere(hit.support, 0.01f, BLACK);
 
 	return hit;
 }
