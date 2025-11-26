@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <iostream>
 #include <limits>
+#include <numeric>
 #include <optional>
 #include <ranges>
 #include <raylib.h>
@@ -206,20 +207,20 @@ auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 				Vector3DotProduct(edgeRef.Vertex()->Vec() - edgeVert, planeNor)
 				/ Vector3DotProduct(planeNor, edgeDir)};
 
-			if (std::isinf(dist)) // Account for /0 resulting in -inf
+			if (std::isinf(dist))
 			{
-				// BUG: Extra points sometimes show up
 				// TODO: Potentially find a more elegant solution
+				//       It's close enough for now, but not perfect
 				auto newPos{sEdge.Next()->Vertex()->Vec()};
 				std::cout << "test B\n";
+				bothInside = false;
 				if (!sideTest(newPos))
 				{
 					std::cout << "test C\n";
 					newPos = newPos
-							 + (Vector3Negate(planeNor)
-								* Vector3DotProduct(
-									planeNor,
-									newPos - ref.Edge()->Vertex()->Vec()));
+							 + Vector3Negate(planeNor)
+							 * Vector3DotProduct(
+								 planeNor, newPos - edgeRef.Vertex()->Vec());
 				}
 				newVerts.emplace_back(newPos.x, newPos.y, newPos.z,
 									  newVerts.size());
@@ -436,27 +437,27 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 			std::get<2>(nor) = Vector3Negate(std::get<2>(nor));
 		return {std::get<0>(nor), std::get<1>(nor), std::get<2>(nor)};
 	};
-	auto supportPoint = [&hull2](auto nor) -> std::pair<Vector3, Vector3>
+	auto genHitObject = [&hull1, &hull2](auto triple) -> EdgeHit
 	{
-		return {nor, hull2.GetSupportPoint(Vector3Negate(nor))};
-	};
-	auto getPenetration = [&hull1, &hull2](auto triple) -> EdgeHit
-	{
-		auto support1
-			= hull2.GetSupportPoint(Vector3Negate(std::get<2>(triple)));
+		auto normal = std::get<2>(triple);
 		return {
-			.penetration = hull1.GetProjection(std::get<2>(triple)).max
-						   - Vector3DotProduct(std::get<2>(triple), support1),
-			.support1 = support1,
+			.penetration = 0.0f,
+			.support1 = hull2.GetSupportPoint(Vector3Negate(normal)),
 			.direction1 = std::get<1>(triple),
-			.support2 = hull1.GetSupportPoint(std::get<2>(triple)),
+			.support2 = hull1.GetSupportPoint(normal),
 			.direction2 = std::get<0>(triple),
-			.normal = std::get<2>(triple),
+			.normal = normal,
 		};
+	};
+	auto getPenetration = [&hull1, &hull2](auto hit) -> EdgeHit
+	{
+		hit.penetration = hull1.GetProjection(hit.normal).max
+						  - Vector3DotProduct(hit.normal, hit.support1);
+		return hit;
 	};
 	auto nors = GetEdgeCrosses(hull1, hull2)
 				| rv::transform(normalizeDirs)
-				// | rv::transform(supportPoint)
+				| rv::transform(genHitObject)
 				| rv::transform(getPenetration)
 				| r::to<vector<EdgeHit>>();
 
