@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <csignal>
 #include <cstdint>
 #include <iostream>
 #include <limits>
@@ -61,14 +62,15 @@ auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
 			if (isEdgeCol)
 			{
 				std::cout << "Edge Collision\n";
-				auto [pen, sup1, dir1, sup2, dir2, nor] = edges;
-				auto closest = GetClosestPoints(edges);
-				auto hitPos = closest.first + (nor * (pen / 2.0f));
+				// auto [pen, sup1, dir1, sup2, dir2, nor] = edges;
+				auto [closest1, closest2] = GetClosestPoints(edges);
+				auto hitPos
+					= closest1 + (edges.normal * (edges.penetration / 2.0f));
 #ifndef NDEBUG
 				DrawSphere(hitPos, 0.025f, BLUE);
-				DrawSphere(closest.first, 0.01f, BLUE);
-				DrawSphere(closest.second, 0.01f, BLUE);
-				DrawLine3D(closest.first, closest.second, BLUE);
+				DrawSphere(closest1, 0.01f, BLUE);
+				DrawSphere(closest2, 0.01f, BLUE);
+				DrawLine3D(closest1, closest2, BLUE);
 #endif // !NDEBUG
 			}
 			else
@@ -447,13 +449,20 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 	};
 	auto genHitObject = [&hull1, &hull2](auto triple) -> EdgeHit
 	{
-		auto normal = std::get<2>(triple);
+		Vector3 normal = std::get<2>(triple);
+		Vector3 dir1 = std::get<1>(triple);
+		Vector3 dir2 = std::get<0>(triple);
+		auto [support1, twin1]
+			= hull2.GetSupportPoints(Vector3Negate(normal), dir1);
+		auto [support2, twin2] = hull1.GetSupportPoints(normal, dir2);
 		return {
 			.penetration = 0.0f,
-			.support1 = hull2.GetSupportPoint(Vector3Negate(normal)),
-			.direction1 = std::get<1>(triple),
-			.support2 = hull1.GetSupportPoint(normal),
-			.direction2 = std::get<0>(triple),
+			.support1 = support1,
+			.twin1 = twin1,
+			.direction1 = dir1,
+			.support2 = support2,
+			.twin2 = twin2,
+			.direction2 = dir2,
 			.normal = normal,
 		};
 	};

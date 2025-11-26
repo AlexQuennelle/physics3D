@@ -2,6 +2,7 @@
 #include "halfEdge.h"
 #include "utils.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <iterator>
@@ -36,7 +37,6 @@ using std::ostream;
 auto GetEdgeCrosses(const HullCollider& col1, const HullCollider& col2)
 	-> vector<Vector3Tuple>
 {
-	std::cout << '\n';
 	auto crosses = [](auto pair) -> Vector3Tuple
 	{
 		auto cross = Vector3Normalize(
@@ -237,18 +237,35 @@ auto HullCollider::GetProjection(const Vector3 nor) const -> Range
 }
 auto HullCollider::GetSupportPoint(const Vector3 axis) const -> Vector3
 {
-	// NOTE: Potentially clean up
-	Vector3 support{};
-	float supportVal{-1.0f};
-	for (const auto vert : this->vertices)
+	auto comp = [this, axis](auto a, auto b) -> bool
 	{
-		if (Vector3DotProduct(axis, (vert.Vec() - this->origin)) > supportVal)
-		{
-			supportVal = Vector3DotProduct(axis, (vert.Vec() - this->origin));
-			support = vert.Vec();
-		}
-	}
-	return support;
+		return Vector3DotProduct(axis, a.Vec() - this->origin)
+			   < Vector3DotProduct(axis, b.Vec() - this->origin);
+	};
+	return r::max_element(this->vertices, comp)->Vec();
+}
+auto HullCollider::GetSupportPoints(const Vector3 axis, const Vector3 dir) const
+	-> std::pair<Vector3, Vector3>
+{
+	auto comp = [this, axis](auto a, auto b) -> bool
+	{
+		return Vector3DotProduct(axis, a.Vec() - this->origin)
+			   < Vector3DotProduct(axis, b.Vec() - this->origin);
+	};
+	auto support = *r::max_element(this->vertices, comp);
+	auto attachedToVec = [support](auto edge) -> auto
+	{
+		return (*edge.Vertex() == support)
+			   || (*edge.Twin()->Vertex() == support);
+	};
+	auto twins = this->edges | rv::filter(attachedToVec);
+	auto checkAlign = [dir](auto a, auto b) -> bool
+	{
+		return Vector3DotProduct(dir, a.Dir())
+			   < Vector3DotProduct(dir, b.Dir());
+	};
+	auto twin = *r::max_element(twins, checkAlign);
+	return {support.Vec(), twin.Twin()->Vertex()->Vec()};
 }
 void HullCollider::DebugDraw(const Matrix& transform, const Color& col) const
 {

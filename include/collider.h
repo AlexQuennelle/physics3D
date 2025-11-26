@@ -46,8 +46,10 @@ struct EdgeHit
 {
 	float penetration{};
 	Vector3 support1{};
+	Vector3 twin1{};
 	Vector3 direction1{};
 	Vector3 support2{};
+	Vector3 twin2{};
 	Vector3 direction2{};
 	Vector3 normal{};
 };
@@ -120,6 +122,8 @@ class HullCollider
 	auto operator*(const Matrix& mat) -> HullCollider;
 
 	auto GetSupportPoint(const Vector3 axis) const -> Vector3;
+	auto GetSupportPoints(const Vector3 axis, const Vector3 dir) const
+		-> std::pair<Vector3, Vector3>;
 	auto GetFace(const uint32_t i) const -> const HE::HFace&
 	{
 		return faces[i];
