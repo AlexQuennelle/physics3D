@@ -464,9 +464,9 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 	return *r::min_element(nors, {}, &EdgeHit::penetration);
 }
 
-PhysObject::PhysObject(const Vector3 pos, const Mesh mesh,
+PhysObject::PhysObject(const Vector3 pos, const Mesh objMesh,
 					   const Collider& col) :
-	mesh(mesh), collider(col), material(LoadMaterialDefault()),
+	mesh(objMesh), collider(col), material(LoadMaterialDefault()),
 	position(MatrixTranslate(pos.x, pos.y, pos.z)),
 	rotation(MatrixRotate({0.0f, 1.0f, 0.0f}, 0.0f)),
 	scale(MatrixScale(1.0f, 1.0f, 1.0f))
@@ -474,14 +474,16 @@ PhysObject::PhysObject(const Vector3 pos, const Mesh mesh,
 
 	UploadMesh(&this->mesh, false);
 }
-PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, const Collider& col,
-					   const Shader& shader) : phys::PhysObject(pos, mesh, col)
+PhysObject::PhysObject(const Vector3 pos, const Mesh objMesh,
+					   const Collider& col, const Shader& objShader) :
+	phys::PhysObject(pos, objMesh, col)
 {
-	this->SetShader(shader);
+	this->SetShader(objShader);
 }
-PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, const Collider& col,
-					   const char* vertShader, const char* fragShader) :
-	phys::PhysObject(pos, mesh, col)
+PhysObject::PhysObject(const Vector3 pos, const Mesh objMesh,
+					   const Collider& col, const char* vertShader,
+					   const char* fragShader) :
+	phys::PhysObject(pos, objMesh, col)
 {
 	this->shader = LoadShader(vertShader, fragShader);
 	this->material.shader = this->shader;

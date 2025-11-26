@@ -17,8 +17,8 @@ endif()
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O0;-g>")
 
 set(CMAKE_CXX_FLAGS
-    "-Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wold-style-cast -Wcast-align\
-    -Wunused -Woverloaded-virtual -Wpedantic -Wconversion -Wsign-conversion\
+    "-Wall -Wextra -Wnon-virtual-dtor -Wold-style-cast -Wcast-align -Wunused\
+    -Woverloaded-virtual -Wpedantic -Wconversion -Wsign-conversion\
     -Wnull-dereference -Wdouble-promotion -Wformat=2 -Wduplicated-cond\
     -Wduplicated-branches -Wlogical-op -Wuseless-cast"
 )
@@ -52,6 +52,7 @@ if(NOT raylib_FOUND)
         raylib
         DOWNLOAD_EXTRACT_TIMESTAMP OFF
         URL https://github.com/raysan5/raylib/archive/refs/tags/${RAYLIB_VERSION}.tar.gz
+            SYSTEM
     )
     FetchContent_GetProperties(raylib)
     if(NOT raylib_POPULATED)
@@ -72,6 +73,7 @@ if(NOT ImGui_FOUND)
         ImGui
         GIT_REPOSITORY https://github.com/ocornut/imgui
         GIT_TAG v${IMGUI_VERSION}
+        SYSTEM
     )
     FetchContent_MakeAvailable(ImGui)
     FetchContent_GetProperties(ImGui SOURCE_DIR IMGUI_DIR)
@@ -81,7 +83,7 @@ if(NOT ImGui_FOUND)
         ${imgui_SOURCE_DIR}/imgui_widgets.cpp
         ${imgui_SOURCE_DIR}/imgui_tables.cpp
     )
-    target_include_directories(ImGui INTERFACE ${imgui_SOURCE_DIR})
+    target_include_directories(ImGui SYSTEM INTERFACE ${imgui_SOURCE_DIR})
 endif()
 
 include(FetchContent)
@@ -89,13 +91,14 @@ FetchContent_Declare(
     rlImGui
     GIT_REPOSITORY https://github.com/raylib-extras/rlImGui
     GIT_TAG 4d8a618
+    SYSTEM
 )
 FetchContent_MakeAvailable(rlImGui)
 FetchContent_GetProperties(rlImGui SOURCE_DIR RLIMGUI_DIR)
 
 add_library(rlImGui STATIC ${rlimgui_SOURCE_DIR}/rlImGui.cpp)
 target_link_libraries(rlImGui PRIVATE ImGui raylib)
-target_include_directories(rlImGui INTERFACE ${rlimgui_SOURCE_DIR})
+target_include_directories(rlImGui SYSTEM INTERFACE ${rlimgui_SOURCE_DIR})
 
 include(FetchContent)
 
@@ -169,7 +172,7 @@ target_include_directories(
     "${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/"
 )
 target_include_directories(
-    "${CMAKE_PROJECT_NAME}" PUBLIC "${PROJECT_BINARY_DIR}"
+    "${CMAKE_PROJECT_NAME}" PUBLIC SYSTEM "${PROJECT_BINARY_DIR}"
 )
 
 if(NOT EMSCRIPTEN)

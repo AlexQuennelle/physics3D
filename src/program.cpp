@@ -18,9 +18,7 @@
 namespace phys
 {
 
-Program::Program() :
-	deltaTime(NAN), cam({.x = 0.0f, .y = 0.0f, .z = 0.0f}),
-	imguiIO(&ImGui::GetIO())
+Program::Program() : deltaTime(NAN), cam({}), imguiIO(&ImGui::GetIO())
 {
 	SetTextColor(INFO);
 	std::cout << "Initializing Program\n";
@@ -234,12 +232,12 @@ void Program::DebugAddStairObj(Vector3 pos)
 	mesh.indices = nullptr;
 	UnloadModel(model);
 
-	auto col = CompoundCollider(CompoundCollider({
+	auto col = CompoundCollider({
 		CreateBoxCollider(MatrixScale(1.0f, 1.0f, 0.5f)
 						  * MatrixTranslate(0.0f, 0.0f, 0.25f)),
 		CreateBoxCollider(MatrixScale(1.0f, 0.5f, 0.5f)
 						  * MatrixTranslate(0.0f, -0.25f, -0.25f)),
-	}));
+	});
 #if defined(PLATFORM_WEB)
 	this->objects.emplace_back(PhysObject(
 		{0.0f, 0.0f, 0.5f}, mesh, std::dynamic_pointer_cast<Collider>(col),

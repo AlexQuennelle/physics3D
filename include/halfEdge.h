@@ -81,7 +81,7 @@ struct HEdge
 	class Iterator
 	{
 		public:
-		Iterator(HEdge* edge) : current(edge->Next()), start(edge) {}
+		Iterator(HEdge* edge) : current(edge->Next()), start(edge) { }
 
 		auto operator*() const -> HEdge& { return *current; }
 		auto operator++() -> Iterator&
@@ -103,9 +103,9 @@ struct HEdge
 			if (this->current == nullptr && other.current == nullptr)
 				return true;
 
-			return this->current == other.current &&
-				   (this->current != this->start ||
-					other.current != this->start);
+			return (this->current == other.current)
+				   && ((this->current != this->start)
+					   || (other.current != this->start));
 		}
 		auto operator!=(const Iterator& other) const -> bool
 		{
@@ -115,7 +115,9 @@ struct HEdge
 		static auto EndIter() -> Iterator { return {nullptr, nullptr}; }
 
 		private:
-		Iterator(HEdge* edge, HEdge* start) : current(edge), start(start) {}
+		Iterator(HEdge* edge, HEdge* startEdge) :
+			current(edge), start(startEdge)
+		{ }
 
 		HEdge* current;
 		HEdge* start;
@@ -127,7 +129,7 @@ struct HEdge
 struct HFace
 {
 
-	HFace(const Vector3 nor) : normal(nor) {};
+	HFace(const Vector3 nor) : normal(nor) { };
 	Vector3 normal;
 	uint8_t edgeID{0};
 
