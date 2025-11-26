@@ -8,7 +8,6 @@
 #include <cstdint>
 #include <iostream>
 #include <limits>
-#include <numeric>
 #include <optional>
 #include <ranges>
 #include <raylib.h>
@@ -148,6 +147,20 @@ void CheckFaceCollision(const Collider& colA, const Collider& colB,
 	}
 	else
 	{
+		const auto& ref = hull2.GetFace(faces2.id);
+		float dot{1.0f};
+		uint32_t incidentID{0};
+		for (uint32_t i{0}; i < hull1.FaceCount(); i++)
+		{
+			const auto& face{hull1.GetFace(i)};
+			if (float newDot{Vector3DotProduct(face.normal, ref.normal)};
+				newDot < dot)
+			{
+				dot = newDot;
+				incidentID = i;
+			}
+		}
+		GenFaceContact(ref, hull1.GetFace(incidentID));
 		DrawLine3D(faces2.support,
 				   faces2.support
 					   + (hull2.GetFace(faces2.id).normal * faces2.penetration),
@@ -212,11 +225,9 @@ auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 				// TODO: Potentially find a more elegant solution
 				//       It's close enough for now, but not perfect
 				auto newPos{sEdge.Next()->Vertex()->Vec()};
-				std::cout << "test B\n";
 				bothInside = false;
 				if (!sideTest(newPos))
 				{
-					std::cout << "test C\n";
 					newPos = newPos
 							 + Vector3Negate(planeNor)
 							 * Vector3DotProduct(
@@ -239,14 +250,11 @@ auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 			}
 			if (bothInside)
 			{
-				std::cout << "test A\n";
 				auto newPos{sEdge.Next()->Vertex()->Vec()};
 				newVerts.emplace_back(newPos.x, newPos.y, newPos.z,
 									  newVerts.size());
 			}
-			std::cout << newVerts.size() << '\n';
 		}
-		std::cout << '\n';
 		for ([[maybe_unused]] const auto point : newVerts)
 		{
 			newSurface.emplace_back(static_cast<uint8_t>(newSurface.size()), 0,
@@ -449,7 +457,7 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 			.normal = normal,
 		};
 	};
-	auto getPenetration = [&hull1, &hull2](auto hit) -> EdgeHit
+	auto getPenetration = [&hull1](auto hit) -> EdgeHit
 	{
 		hit.penetration = hull1.GetProjection(hit.normal).max
 						  - Vector3DotProduct(hit.normal, hit.support1);
@@ -464,9 +472,9 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 	return *r::min_element(nors, {}, &EdgeHit::penetration);
 }
 
-PhysObject::PhysObject(const Vector3 pos, const Mesh objMesh,
+PhysObject::PhysObject(const Vector3 pos, const Mesh mesh,
 					   const Collider& col) :
-	mesh(objMesh), collider(col), material(LoadMaterialDefault()),
+	mesh(mesh), collider(col), material(LoadMaterialDefault()),
 	position(MatrixTranslate(pos.x, pos.y, pos.z)),
 	rotation(MatrixRotate({0.0f, 1.0f, 0.0f}, 0.0f)),
 	scale(MatrixScale(1.0f, 1.0f, 1.0f))
@@ -474,16 +482,14 @@ PhysObject::PhysObject(const Vector3 pos, const Mesh objMesh,
 
 	UploadMesh(&this->mesh, false);
 }
-PhysObject::PhysObject(const Vector3 pos, const Mesh objMesh,
-					   const Collider& col, const Shader& objShader) :
-	phys::PhysObject(pos, objMesh, col)
+PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, const Collider& col,
+					   const Shader& shader) : phys::PhysObject(pos, mesh, col)
 {
-	this->SetShader(objShader);
+	this->SetShader(shader);
 }
-PhysObject::PhysObject(const Vector3 pos, const Mesh objMesh,
-					   const Collider& col, const char* vertShader,
-					   const char* fragShader) :
-	phys::PhysObject(pos, objMesh, col)
+PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, const Collider& col,
+					   const char* vertShader, const char* fragShader) :
+	phys::PhysObject(pos, mesh, col)
 {
 	this->shader = LoadShader(vertShader, fragShader);
 	this->material.shader = this->shader;

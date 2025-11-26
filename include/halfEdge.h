@@ -115,9 +115,7 @@ struct HEdge
 		static auto EndIter() -> Iterator { return {nullptr, nullptr}; }
 
 		private:
-		Iterator(HEdge* edge, HEdge* startEdge) :
-			current(edge), start(startEdge)
-		{ }
+		Iterator(HEdge* edge, HEdge* start) : current(edge), start(start) { }
 
 		HEdge* current;
 		HEdge* start;
