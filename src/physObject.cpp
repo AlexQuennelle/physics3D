@@ -48,7 +48,6 @@ auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
 			if (faces1.penetration <= 0)
 				continue;
 			auto faces2 = CheckFaceNors(col2, col1);
-			// auto [id, penetration, support] = CheckFaceNors(col2, col1);
 			if (faces2.penetration <= 0)
 				continue;
 			auto edges = CheckEdgeNors(col1, col2);
@@ -56,20 +55,21 @@ auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
 				continue;
 
 			bool isEdgeCol{
-				edges.penetration
-					< faces1.penetration
-					&& edges.penetration
-					< faces2.penetration,
+				(edges.penetration < faces1.penetration)
+					&& (edges.penetration < faces2.penetration),
 			};
 			if (isEdgeCol)
 			{
-				auto [id1, id2, penetration, support, normal] = edges;
-				// Edge collision
 				std::cout << "Edge Collision\n";
-				// DrawLine3D(support, support + (normal * penetration), GREEN);
-				// DrawSphere(support + (normal * penetration), 0.01f, GREEN);
-				// std::get<0>(col1).DebugDrawEdge(id1);
-				// std::get<0>(col2).DebugDrawEdge(id2);
+				auto [pen, sup1, dir1, sup2, dir2, nor] = edges;
+				auto closest = GetClosestPoints(edges);
+				auto hitPos = closest.first + (nor * (pen / 2.0f));
+#ifndef NDEBUG
+				DrawSphere(hitPos, 0.025f, BLUE);
+				DrawSphere(closest.first, 0.01f, BLUE);
+				DrawSphere(closest.second, 0.01f, BLUE);
+				DrawLine3D(closest.first, closest.second, BLUE);
+#endif // !NDEBUG
 			}
 			else
 			{
@@ -429,40 +429,38 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 	const HullCollider& hull1 = std::get<0>(colA);
 	const HullCollider& hull2 = std::get<0>(colB);
 
-	auto normalizeDirs = [&hull2, &hull1](auto nor) -> auto
+	auto normalizeDirs = [&hull2, &hull1](auto nor) -> Vector3Tuple
 	{
 		auto dir = hull2.origin - hull1.origin;
-		if (Vector3DotProduct(nor, dir) >= 0)
-			nor = Vector3Negate(nor);
-		return nor;
+		if (Vector3DotProduct(std::get<2>(nor), dir) >= 0)
+			std::get<2>(nor) = Vector3Negate(std::get<2>(nor));
+		return {std::get<0>(nor), std::get<1>(nor), std::get<2>(nor)};
 	};
 	auto supportPoint = [&hull2](auto nor) -> std::pair<Vector3, Vector3>
 	{
 		return {nor, hull2.GetSupportPoint(Vector3Negate(nor))};
 	};
-	auto getPenetration = [&hull1](auto pair) -> EdgeHit
+	auto getPenetration = [&hull1, &hull2](auto triple) -> EdgeHit
 	{
+		auto support1
+			= hull2.GetSupportPoint(Vector3Negate(std::get<2>(triple)));
 		return {
-			.id1 = 0,
-			.id2 = 0,
-			.penetration = hull1.GetProjection(pair.first).max
-						   - Vector3DotProduct(pair.first, pair.second),
-			.support = pair.second,
-			.normal = pair.first,
+			.penetration = hull1.GetProjection(std::get<2>(triple)).max
+						   - Vector3DotProduct(std::get<2>(triple), support1),
+			.support1 = support1,
+			.direction1 = std::get<1>(triple),
+			.support2 = hull1.GetSupportPoint(std::get<2>(triple)),
+			.direction2 = std::get<0>(triple),
+			.normal = std::get<2>(triple),
 		};
 	};
 	auto nors = GetEdgeCrosses(hull1, hull2)
 				| rv::transform(normalizeDirs)
-				| rv::transform(supportPoint)
+				// | rv::transform(supportPoint)
 				| rv::transform(getPenetration)
 				| r::to<vector<EdgeHit>>();
-	EdgeHit hit = *r::min_element(nors, {}, &EdgeHit::penetration);
 
-	DrawLine3D(hit.support, hit.support + (hit.normal * hit.penetration),
-			   BLACK);
-	DrawSphere(hit.support, 0.01f, BLACK);
-
-	return hit;
+	return *r::min_element(nors, {}, &EdgeHit::penetration);
 }
 
 PhysObject::PhysObject(const Vector3 pos, const Mesh mesh,

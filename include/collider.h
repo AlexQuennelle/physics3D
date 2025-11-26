@@ -24,6 +24,7 @@ class HullCollider;
 class CompoundCollider;
 
 using Collider = std::variant<HullCollider, CompoundCollider>;
+using Vector3Tuple = std::tuple<Vector3, Vector3, Vector3>;
 
 struct HitObj;
 struct RaycastHit;
@@ -43,12 +44,15 @@ struct FaceHit
 };
 struct EdgeHit
 {
-	uint32_t id1;
-	uint32_t id2;
-	float penetration;
-	Vector3 support;
-	Vector3 normal;
+	float penetration{};
+	Vector3 support1{};
+	Vector3 direction1{};
+	Vector3 support2{};
+	Vector3 direction2{};
+	Vector3 normal{};
 };
+
+auto GetClosestPoints(const EdgeHit hit) -> std::pair<Vector3, Vector3>;
 
 /** @brief Interface for convex collider types. Ensures compliance with a
  *         particular set of methods used by the collision detection systems.
@@ -123,7 +127,8 @@ class HullCollider
 	auto FaceCount() const -> uint64_t { return this->faces.size(); }
 
 	friend auto GetEdgeCrosses(const HullCollider& col1,
-							   const HullCollider& col2) -> vector<Vector3>;
+							   const HullCollider& col2)
+		-> vector<Vector3Tuple>;
 
 	void DebugDraw(const Matrix& transform, const Color& col) const;
 	void DebugDrawEdge(const uint64_t index) const;

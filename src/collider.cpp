@@ -3,9 +3,7 @@
 #include "utils.h"
 
 #include <cassert>
-#include <csignal>
 #include <cstdint>
-#include <format>
 #include <iterator>
 #include <limits>
 #include <map>
@@ -36,24 +34,39 @@ using std::ostream;
 #endif
 
 auto GetEdgeCrosses(const HullCollider& col1, const HullCollider& col2)
-	-> vector<Vector3>
+	-> vector<Vector3Tuple>
 {
 	std::cout << '\n';
-	auto crosses = [](auto pair) -> Vector3
+	auto crosses = [](auto pair) -> Vector3Tuple
 	{
 		auto cross = Vector3Normalize(
 			Vector3CrossProduct(std::get<0>(pair), std::get<1>(pair)));
-		return cross;
+		return {std::get<0>(pair), std::get<1>(pair), cross};
 	};
 	auto deDupe = [](auto pair) -> bool
 	{
 		return !Vector3Equivalent(std::get<0>(pair), std::get<1>(pair));
 	};
-	auto tmp = rv::cartesian_product(col1.edgeDirs, col2.edgeDirs)
-			   | rv::filter(deDupe)
-			   | rv::transform(crosses)
-			   | r::to<std::vector<Vector3>>();
-	return {tmp.begin(), tmp.end()};
+	return rv::cartesian_product(col1.edgeDirs, col2.edgeDirs)
+		   | rv::filter(deDupe)
+		   | rv::transform(crosses)
+		   | r::to<std::vector<Vector3Tuple>>();
+}
+auto GetClosestPoints(const EdgeHit hit) -> std::pair<Vector3, Vector3>
+{
+	auto cross1 = Vector3CrossProduct(hit.direction1, hit.normal);
+	auto cross2 = Vector3CrossProduct(hit.direction2, hit.normal);
+	auto point1 = hit.support1
+				  + Vector3Scale(
+					  hit.direction1,
+					  (Vector3DotProduct((hit.support2 - hit.support1), cross2)
+					   / Vector3DotProduct(hit.direction1, cross2)));
+	auto point2 = hit.support2
+				  + Vector3Scale(
+					  hit.direction2,
+					  (Vector3DotProduct((hit.support1 - hit.support2), cross1)
+					   / Vector3DotProduct(hit.direction2, cross1)));
+	return {point1, point2};
 }
 
 HullCollider::HullCollider(const vector<HE::HVertex>& verts,
