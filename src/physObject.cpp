@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <csignal>
 #include <cstdint>
 #include <iostream>
 #include <limits>
@@ -61,12 +60,17 @@ auto CheckCollision(const PhysObject& obj1, const PhysObject& obj2)
 			};
 			if (isEdgeCol)
 			{
+				// TODO: Get rid of this and rework hit object
 				std::cout << "Edge Collision\n";
-				// auto [pen, sup1, dir1, sup2, dir2, nor] = edges;
 				auto [closest1, closest2] = GetClosestPoints(edges);
 				auto hitPos
 					= closest1 + (edges.normal * (edges.penetration / 2.0f));
 #ifndef NDEBUG
+				DrawSphere(edges.support1, 0.01f, BLUE);
+				DrawSphere(edges.twin1, 0.01f, BLUE);
+				DrawSphere(edges.support2, 0.01f, BLUE);
+				DrawSphere(edges.twin2, 0.01f, BLUE);
+
 				DrawSphere(hitPos, 0.025f, BLUE);
 				DrawSphere(closest1, 0.01f, BLUE);
 				DrawSphere(closest2, 0.01f, BLUE);
@@ -472,11 +476,26 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 						  - Vector3DotProduct(hit.normal, hit.support1);
 		return hit;
 	};
+	auto onSegment = [](auto a, auto b, auto c) -> bool
+	{
+		return (Vector3DotProduct(a - b, c - b) >= 0.0f)
+			   && (Vector3DotProduct(b - a, c - a) >= 0.0f);
+	};
+	auto checkBounds = [onSegment](auto hit) -> bool
+	{
+		auto [closest1, closest2] = GetClosestPoints(hit);
+		return onSegment(hit.support1, hit.twin1, closest1)
+			   && onSegment(hit.support2, hit.twin2, closest2);
+	};
 	auto nors = GetEdgeCrosses(hull1, hull2)
 				| rv::transform(normalizeDirs)
 				| rv::transform(genHitObject)
 				| rv::transform(getPenetration)
+				| rv::filter(checkBounds)
 				| r::to<vector<EdgeHit>>();
+
+	if (nors.empty())
+		return {};
 
 	return *r::min_element(nors, {}, &EdgeHit::penetration);
 }

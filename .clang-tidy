@@ -38,6 +38,6 @@ CheckOptions:
   - key: readability-identifier-length.IgnoredVariableNames
     value: 'x|y|z|i'
   - key: readability-identifier-length.IgnoredParameterNames
-    value: 'x|y|z|i'
+    value: 'x|y|z|i|a|b|c'
   - key: readability-identifier-length.MinimumLoopCounterNameLength
     value: '1'

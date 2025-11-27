@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
+#include <format>
 #include <iterator>
 #include <limits>
 #include <map>
@@ -244,7 +245,7 @@ auto HullCollider::GetSupportPoint(const Vector3 axis) const -> Vector3
 	};
 	return r::max_element(this->vertices, comp)->Vec();
 }
-auto HullCollider::GetSupportPoints(const Vector3 axis, const Vector3 dir) const
+auto HullCollider::GetSupportPoints(const Vector3 axis, Vector3 dir) const
 	-> std::pair<Vector3, Vector3>
 {
 	auto comp = [this, axis](auto a, auto b) -> bool
@@ -253,19 +254,23 @@ auto HullCollider::GetSupportPoints(const Vector3 axis, const Vector3 dir) const
 			   < Vector3DotProduct(axis, b.Vec() - this->origin);
 	};
 	auto support = *r::max_element(this->vertices, comp);
+
 	auto attachedToVec = [support](auto edge) -> auto
 	{
 		return (*edge.Vertex() == support)
-			   || (*edge.Twin()->Vertex() == support);
+			   && (*edge.Twin()->Vertex() != support);
 	};
-	auto twins = this->edges | rv::filter(attachedToVec);
+	auto twins = this->edges
+				 | rv::filter(attachedToVec)
+				 | rv::filter([dir](auto edge) -> bool
+							  { return Vector3Equivalent(dir, edge.Dir()); });
 	auto checkAlign = [dir](auto a, auto b) -> bool
 	{
 		return Vector3DotProduct(dir, a.Dir())
 			   < Vector3DotProduct(dir, b.Dir());
 	};
-	auto twin = *r::max_element(twins, checkAlign);
-	return {support.Vec(), twin.Twin()->Vertex()->Vec()};
+	auto twin = *r::max_element(twins, checkAlign)->Twin()->Vertex();
+	return {support.Vec(), twin.Vec()};
 }
 void HullCollider::DebugDraw(const Matrix& transform, const Color& col) const
 {
@@ -393,7 +398,8 @@ void CompoundCollider::DebugDraw(const Matrix& transform,
 #ifndef NDEBUG
 auto operator<<(ostream& ostr, Vector3 vec) -> ostream&
 {
-	ostr << '(' << vec.x << ", " << vec.y << ", " << vec.z << ')';
+	ostr << std::format("({:.3f}, {:.3f}, {:.3f})", vec.x, vec.y, vec.z);
+	// ostr << '(' << vec.x << ", " << vec.y << ", " << vec.z << ')';
 	return ostr;
 }
 auto operator<<(ostream& ostr, Range range) -> ostream&

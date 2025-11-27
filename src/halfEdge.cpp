@@ -45,7 +45,8 @@ auto HFace::Plane() const -> struct Plane
 #ifndef NDEBUG
 auto operator<<(std::ostream& ostr, HVertex vert) -> std::ostream&
 {
-	ostr << '(' << vert.x << ", " << vert.y << ", " << vert.z << ')';
+	ostr << std::format("({:.3f}, {:.3f}, {:.3f})", vert.x, vert.y, vert.z);
+	// ostr << '(' << vert.x << ", " << vert.y << ", " << vert.z << ')';
 	return ostr;
 }
 auto operator<<(std::ostream& ostr, HEdge edge) -> std::ostream&
