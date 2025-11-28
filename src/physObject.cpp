@@ -1,6 +1,7 @@
 #include "physObject.h"
 #include "collider.h"
 #include "halfEdge.h"
+#include "utils.h"
 
 #include <algorithm>
 #include <cassert>
@@ -217,7 +218,7 @@ auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 			if (Vector3DotProduct(planeNor, edgeDir) >= 0)
 			{
 				edgeVert = sEdge.Next()->Vertex()->Vec();
-				edgeDir = Vector3Negate(edgeDir);
+				edgeDir = -edgeDir;
 
 				bothInside = sideTest(sEdge.Next()->Vertex()->Vec())
 							 && !sideTest(sEdge.Vertex()->Vec());
@@ -235,7 +236,7 @@ auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 				if (!sideTest(newPos))
 				{
 					newPos = newPos
-							 + Vector3Negate(planeNor)
+							 + (-planeNor)
 							 * Vector3DotProduct(
 								 planeNor, newPos - edgeRef.Vertex()->Vec());
 				}
@@ -276,8 +277,7 @@ auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 	{
 		DrawLine3D(edge.Vertex()->Vec(), edge.Next()->Vertex()->Vec(), RED);
 		auto start = edge.Next()->Vertex()->Vec();
-		auto end = (Vector3RotateByAxisAngle(Vector3Negate(edge.Dir() * 0.1f),
-											 Vector3Negate(ref.normal),
+		auto end = (Vector3RotateByAxisAngle((-edge.Dir() * 0.1f), -ref.normal,
 											 20.0f * DEG2RAD)
 					+ start);
 		DrawLine3D(start, end, RED);
@@ -292,7 +292,7 @@ auto GenFaceContact(const HE::HFace& ref, const HE::HFace& incident)
 		auto refPoint = ref.Edge()->Vertex()->Vec();
 		auto nor = ref.normal;
 		return vert.Vec()
-			   + Vector3Negate(nor)
+			   + (-nor)
 			   * Vector3DotProduct(nor, vert.Vec() - refPoint);
 	};
 	vector<Vector3> contact = sVerts
@@ -409,9 +409,9 @@ auto CheckFaceNors(Collider colA, Collider colB) -> FaceHit
 	for (uint32_t i{0}; i < hull1.faces.size(); i++)
 	{
 		Vector3 nor = hull1.faces[i].normal;
-		Vector3 support{std::visit(
-			[nor](const isCollider auto& col) -> Vector3
-			{ return col.GetSupportPoint(Vector3Negate(nor)); }, colB)};
+		Vector3 support{std::visit([nor](const isCollider auto& col) -> Vector3
+								   { return col.GetSupportPoint(-nor); },
+								   colB)};
 		float penetration
 			= Vector3DotProduct(hull1.faces[i].Edge()->Vertex()->Vec(), nor)
 			  - Vector3DotProduct(support, nor);
@@ -448,7 +448,7 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 	{
 		auto dir = hull2.origin - hull1.origin;
 		if (Vector3DotProduct(std::get<2>(nor), dir) >= 0)
-			std::get<2>(nor) = Vector3Negate(std::get<2>(nor));
+			std::get<2>(nor) = -std::get<2>(nor);
 		return {std::get<0>(nor), std::get<1>(nor), std::get<2>(nor)};
 	};
 	auto genHitObject = [&hull1, &hull2](auto triple) -> EdgeHit
@@ -456,8 +456,7 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 		Vector3 normal = std::get<2>(triple);
 		Vector3 dir1 = std::get<1>(triple);
 		Vector3 dir2 = std::get<0>(triple);
-		auto [support1, twin1]
-			= hull2.GetSupportPoints(Vector3Negate(normal), dir1);
+		auto [support1, twin1] = hull2.GetSupportPoints(-normal, dir1);
 		auto [support2, twin2] = hull1.GetSupportPoints(normal, dir2);
 		return {
 			.penetration = 0.0f,
@@ -470,28 +469,23 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 			.normal = normal,
 		};
 	};
+	auto checkBounds = [](auto hit) -> bool
+	{
+		auto [closest1, closest2] = GetClosestPoints(hit);
+		return IsPointOnSegment(hit.support1, hit.twin1, closest1)
+			   && IsPointOnSegment(hit.support2, hit.twin2, closest2);
+	};
 	auto getPenetration = [&hull1](auto hit) -> EdgeHit
 	{
 		hit.penetration = hull1.GetProjection(hit.normal).max
 						  - Vector3DotProduct(hit.normal, hit.support1);
 		return hit;
 	};
-	auto onSegment = [](auto a, auto b, auto c) -> bool
-	{
-		return (Vector3DotProduct(a - b, c - b) >= 0.0f)
-			   && (Vector3DotProduct(b - a, c - a) >= 0.0f);
-	};
-	auto checkBounds = [onSegment](auto hit) -> bool
-	{
-		auto [closest1, closest2] = GetClosestPoints(hit);
-		return onSegment(hit.support1, hit.twin1, closest1)
-			   && onSegment(hit.support2, hit.twin2, closest2);
-	};
 	auto nors = GetEdgeCrosses(hull1, hull2)
 				| rv::transform(normalizeDirs)
 				| rv::transform(genHitObject)
-				| rv::transform(getPenetration)
 				| rv::filter(checkBounds)
+				| rv::transform(getPenetration)
 				| r::to<vector<EdgeHit>>();
 
 	if (nors.empty())

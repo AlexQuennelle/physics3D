@@ -286,8 +286,8 @@ void HullCollider::DebugDraw(const Matrix& transform, const Color& col) const
 		{
 			Vector3 start = edge.Twin()->Vertex()->Vec() * transform;
 			Vector3 end
-				= (Vector3RotateByAxisAngle(Vector3Negate(edge.Dir()) * 0.1f,
-											face.normal, 20.0f * DEG2RAD)
+				= (Vector3RotateByAxisAngle((-edge.Dir()) * 0.1f, face.normal,
+											20.0f * DEG2RAD)
 				   + edge.Twin()->Vertex()->Vec())
 				  * transform;
 			DrawLine3D(start, end, col);
