@@ -10,33 +10,37 @@
 namespace phys
 {
 
-/** @brief Object that interacts with the physics simulation systems. Has a
- *         collider for collision detection and resolution, and a mesh and
- *         material for rendering.
+/**
+ * @brief Object that interacts with the physics simulation systems. Has a
+ *        collider for collision detection and resolution, and a mesh and
+ *        material for rendering.
  *
- *  @note Physics and other logic happens in the Update() method, while
- *        rendering happens in the Draw() method.
+ * @note Physics and other logic happens in the Update() method, while
+ *       rendering happens in the Draw() method.
  */
 class PhysObject
 {
 	public:
-	/** @param pos The initial position of the object in 3D space.
-	 *  @param mesh The mesh to render when Draw() is called.
-	 *  @param col The Collider to use for physics calculations.
+	/**
+	 * @param pos The initial position of the object in 3D space.
+	 * @param mesh The mesh to render when Draw() is called.
+	 * @param col The Collider to use for physics calculations.
 	 */
 	PhysObject(const Vector3 pos, const Mesh mesh, const Collider& col);
-	/** @param pos The initial position of the object in 3D space.
-	 *  @param mesh The mesh to render when Draw() is called.
-	 *  @param col The Collider to use for physics calculations.
-	 *  @param shader A shader to apply when rendering the mesh.
+	/**
+	 * @param pos The initial position of the object in 3D space.
+	 * @param mesh The mesh to render when Draw() is called.
+	 * @param col The Collider to use for physics calculations.
+	 * @param shader A shader to apply when rendering the mesh.
 	 */
 	PhysObject(const Vector3 pos, const Mesh mesh, const Collider& col,
 			   const Shader& shader);
-	/** @param pos The initial position of the object in 3D space.
-	 *  @param mesh The mesh to render when Draw() is called.
-	 *  @param col The Collider to use for physics calculations.
-	 *  @param fragShader Path to the shader file to load.
-	 *  @param vertShader Path to the shader file to load.
+	/**
+	 * @param pos The initial position of the object in 3D space.
+	 * @param mesh The mesh to render when Draw() is called.
+	 * @param col The Collider to use for physics calculations.
+	 * @param fragShader Path to the shader file to load.
+	 * @param vertShader Path to the shader file to load.
 	 */
 	PhysObject(const Vector3 pos, const Mesh mesh, const Collider& col,
 			   const char* vertShader, const char* fragShader);
@@ -51,8 +55,9 @@ class PhysObject
 	void Update();
 	void Draw() const;
 
-	/** @returns The composite of the position, rotation, and scale
-	 *           transformation matrices.
+	/**
+	 * @returns The composite of the position, rotation, and scale
+	 *          transformation matrices.
 	 */
 	auto GetTransformM() const -> Matrix
 	{
@@ -88,7 +93,8 @@ class PhysObject
 		position.m13 = newPos.y;
 		position.m14 = newPos.z;
 	}
-	/** @brief Sets the object's rotation in world space using a rotation
+	/**
+	 * @brief Sets the object's rotation in world space using a rotation
 	 *        Matrix.
 	 */
 	void SetRotation(const Matrix& newRot) { this->rotation = newRot; }
@@ -118,17 +124,14 @@ class PhysObject
 	{
 		// collider.GetTransformed(this->GetTransformM(), out);
 		std::visit([this, &out](isCollider auto& col) -> void
-		{
-			col.GetTransformed(this->GetTransformM(), out);
-		}, this->collider);
+				   { col.GetTransformed(this->GetTransformM(), out); },
+				   this->collider);
 	}
 	void GetColliderT(Matrix trans, vector<Collider>& out) const
 	{
 		// collider->GetTransformed(trans, out);
 		std::visit([&out, trans](isCollider auto& col) -> void
-		{
-			col.GetTransformed(trans, out);
-		}, this->collider);
+				   { col.GetTransformed(trans, out); }, this->collider);
 	}
 	/** @brief Sets the shader to use when drawing the object. */
 	void SetShader(const Shader& newShader)

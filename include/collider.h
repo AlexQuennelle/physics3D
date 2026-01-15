@@ -28,8 +28,9 @@ using Vector3Tuple = std::tuple<Vector3, Vector3, Vector3>;
 
 struct HitObj;
 struct RaycastHit;
-/** @brief Type representing a range of float values between a min and a max
- *         value.
+/**
+ * @brief Type representing a range of float values between a min and a max
+ *        value.
  */
 struct Range
 {
@@ -56,8 +57,9 @@ struct EdgeHit
 
 auto GetClosestPoints(const EdgeHit hit) -> std::pair<Vector3, Vector3>;
 
-/** @brief Interface for convex collider types. Ensures compliance with a
- *         particular set of methods used by the collision detection systems.
+/**
+ * @brief Interface for convex collider types. Ensures compliance with a
+ *        particular set of methods used by the collision detection systems.
  */
 template <typename T>
 concept isCollider
@@ -71,8 +73,9 @@ concept isCollider
 		  { col.DebugDraw(mat, color) } -> std::same_as<void>;
 	  };
 
-/** @brief Special type of collider that collects several more simple colliders
- *         together to create complex concave shapes
+/**
+ * @brief Special type of collider that collects several more simple colliders
+ *        together to create complex concave shapes
  */
 class CompoundCollider //: public Collider
 {

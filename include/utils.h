@@ -18,10 +18,11 @@ inline auto Vector3Equivalent(const Vector3 vec1, const Vector3 vec2) -> bool
 {
 	return (vec1 == vec2) || (vec1 == -vec2);
 }
-/** @brief Returns true if the point 'c' is on the line segment described by
- *         points 'a' and 'b'.
- *   @note This function assumes that all input points lie on a shared line in
- *         3D space
+/**
+ * @brief Returns true if the point 'c' is on the line segment described by
+ *        points 'a' and 'b'.
+ * @note This function assumes that all input points lie on a shared line in
+ *       3D space
  */
 inline auto IsPointOnSegment(Vector3 a, Vector3 b, Vector3 c) -> bool
 {

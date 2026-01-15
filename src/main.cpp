@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <raylib.h>
-#include <raymath.h>
 #include <rlImGui.h>
 #include <rlgl.h>
 #if defined(PLATFORM_WEB)

@@ -142,8 +142,9 @@ struct HFace
 	std::vector<HE::HEdge>* edgeArr{nullptr};
 };
 
-/** @brief Interface type for initializing half-edge structures with N sided
- *         faces.
+/**
+ * @brief Interface type for initializing half-edge structures with N sided
+ *        faces.
  */
 struct FaceInit
 {
