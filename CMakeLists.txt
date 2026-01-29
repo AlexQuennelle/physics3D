@@ -10,7 +10,7 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 if("${CMAKE_GENERATOR}" STREQUAL "Ninja")
     set(WINDOWS TRUE)
     message("Ninja")
-else() # set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+else()
 
 endif()
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O3;-ffast-math>")
