@@ -1,0 +1,3 @@
+[submodule "engine-core"]
+	path = engine-core
+	url = git@github.com:AlexQuennelle/engine-core.git
