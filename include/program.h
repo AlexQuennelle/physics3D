@@ -1,39 +1,47 @@
 #pragma once
 
-#include "physObject.h"
+#include "mesh.h"
+#include "window.h"
+#include "matrix.h"
 
-#include <imgui.h>
-#include <raylib.h>
-#include <vector>
+#include <bx/timer.h>
 
-namespace phys
-{
-
-using std::vector;
+static const std::string_view Backend{BACKEND};
 
 class Program
 {
 	public:
 	Program();
+	Program(const Program&) = delete;
+	Program(Program&&) = delete;
+	~Program();
 
-	void Update();
+	void Run();
+
+	auto operator=(const Program&) -> Program& = delete;
+	auto operator=(Program&&) -> Program& = delete;
+
+#ifdef __EMSCRIPTEN__
+	friend void WebLoop(void* arg);
+#endif // __EMSCRIPTEN__
 
 	private:
-	void ProcessInput();
+	void Init();
+	void Update();
+	void Draw(); // const;
 
-	float deltaTime;
-	float gravity{1.0f};
-	vector<PhysObject> objects;
-	Camera cam;
+	EngineWindow win;
+	Mesh test;
 
-	PhysObject* selectedObj{nullptr};
+	bgfx::ProgramHandle shader = BGFX_INVALID_HANDLE;
 
-	ImGuiIO* imguiIO;
+	bx::Ticks lastFrame{bx::InitNone};
+	float deltaTime{0.0f};
 
-	// NOTE: Remove when creating physics objects from meshes is properly
-	//       implemented.
-	void DebugAddStairObj(Vector3 pos);
+	Matrix<4> modelMat{Matrix<4>::Identity()};
+	bool spin{true};
 };
-void DrawGrid(const float lineLength, const int count);
 
-} //namespace phys
+#ifdef __EMSCRIPTEN__
+void WebLoop(void* arg);
+#endif // __EMSCRIPTEN__

@@ -16,12 +16,6 @@ endif()
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O3;-ffast-math>")
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O0;-g>")
 
-set(CMAKE_CXX_FLAGS
-    "-Wall -Wextra -Wnon-virtual-dtor -Wold-style-cast -Wcast-align -Wunused\
-    -Woverloaded-virtual -Wpedantic -Wconversion -Wsign-conversion\
-    -Wnull-dereference -Wdouble-promotion -Wformat=2 -Wduplicated-cond\
-    -Wduplicated-branches -Wlogical-op -Wuseless-cast"
-)
 if(NOT WINDOWS)
     add_compile_options("-fsanitize=undefined")
     # add_compile_options("-fsanitize=address")
@@ -33,7 +27,7 @@ project(
     LANGUAGES CXX C
     VERSION 0.1
 )
-option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+# option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 
 message("Build type: ${CMAKE_BUILD_TYPE}")
 
@@ -44,64 +38,37 @@ if(NOT WINDOWS)
     # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 endif()
 
-set(RAYLIB_VERSION 5.5)
-find_package(raylib ${RAYLIB_VERSION} QUIET)
-if(NOT raylib_FOUND)
-    include(FetchContent)
-    FetchContent_Declare(
-        raylib
-        DOWNLOAD_EXTRACT_TIMESTAMP OFF
-        URL https://github.com/raysan5/raylib/archive/refs/tags/${RAYLIB_VERSION}.tar.gz
-            SYSTEM
+set(SHADERS_SOURCE ${CMAKE_SOURCE_DIR}/resources/shaders)
+set(SHADERS_BIN ${CMAKE_BINARY_DIR}/shaders)
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine-core/)
+
+# include(${CMAKE_BINARY_DIR}/_deps/bgfx-src/cmake/bgfxToolUtils.cmake)
+# build/_deps/bgfx-build/cmake/bgfx/shaderc -f resources/shaders/cubes.vert -o build/shaders/spirv/cubes.vert.bin --type v --varyingdef resources/shaders/varying.def.sc -p spirv
+
+if(NOT EMSCRIPTEN)
+    message("Compiling Shaders")
+    bgfx_compile_shaders(
+        TYPE FRAGMENT
+        SHADERS "${SHADERS_SOURCE}/cubes.frag"
+        VARYING_DEF "${SHADERS_SOURCE}/varying.def.sc"
+        OUTPUT_DIR "${SHADERS_BIN}"
     )
-    FetchContent_GetProperties(raylib)
-    if(NOT raylib_POPULATED)
-        set(FETCHCONTENT_QUIET NO)
-        FetchContent_MakeAvailable(raylib)
-        set(BUILD_EXAMPLES
-            OFF
-            CACHE BOOL "" FORCE
-        )
-    endif()
+    bgfx_compile_shaders(
+        TYPE VERTEX
+        SHADERS "${SHADERS_SOURCE}/cubes.vert"
+        VARYING_DEF "${SHADERS_SOURCE}/varying.def.sc"
+        OUTPUT_DIR "${SHADERS_BIN}"
+    )
+    message("Done!")
 endif()
 
-set(IMGUI_VERSION 1.92.2)
-find_package(ImGui ${IMGUI_VERSION} QUIET)
-if(NOT ImGui_FOUND)
-    include(FetchContent)
-    FetchContent_Declare(
-        ImGui
-        GIT_REPOSITORY https://github.com/ocornut/imgui
-        GIT_TAG v${IMGUI_VERSION}
-        SYSTEM
-    )
-    FetchContent_MakeAvailable(ImGui)
-    FetchContent_GetProperties(ImGui SOURCE_DIR IMGUI_DIR)
-    add_library(
-        ImGui STATIC
-        ${imgui_SOURCE_DIR}/imgui.cpp ${imgui_SOURCE_DIR}/imgui_draw.cpp
-        ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-        ${imgui_SOURCE_DIR}/imgui_tables.cpp
-    )
-    target_include_directories(ImGui SYSTEM INTERFACE ${imgui_SOURCE_DIR})
-endif()
-
-include(FetchContent)
-FetchContent_Declare(
-    rlImGui
-    GIT_REPOSITORY https://github.com/raylib-extras/rlImGui
-    GIT_TAG 4d8a618
-    SYSTEM
+set(CMAKE_CXX_FLAGS
+    "-Wall -Wextra -Wnon-virtual-dtor -Wold-style-cast -Wcast-align -Wunused\
+    -Woverloaded-virtual -Wpedantic -Wconversion -Wsign-conversion\
+    -Wnull-dereference -Wdouble-promotion -Wformat=2 -Wduplicated-cond\
+    -Wduplicated-branches -Wlogical-op -Wuseless-cast"
 )
-FetchContent_MakeAvailable(rlImGui)
-FetchContent_GetProperties(rlImGui SOURCE_DIR RLIMGUI_DIR)
-
-add_library(rlImGui STATIC ${rlimgui_SOURCE_DIR}/rlImGui.cpp)
-target_link_libraries(rlImGui PRIVATE ImGui raylib)
-target_include_directories(rlImGui SYSTEM INTERFACE ${rlimgui_SOURCE_DIR})
-
-include(FetchContent)
-
 file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS
      "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
@@ -164,9 +131,14 @@ target_compile_definitions(
 
 target_compile_features("${CMAKE_PROJECT_NAME}" PRIVATE cxx_std_23)
 
-target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${MY_SOURCES})
+# target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${MY_SOURCES})
+target_sources(
+    "${CMAKE_PROJECT_NAME}" PRIVATE
+    src/main.cpp
+    src/program.cpp
+)
 
-target_link_libraries(${PROJECT_NAME} raylib ImGui rlImGui)
+target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC engine-core)
 
 target_include_directories(
     "${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/"
