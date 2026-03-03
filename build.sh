@@ -15,10 +15,14 @@ elif [ "${buildType^}" != "Debug" ] && [ "${buildType^}" != "Release" ]; then
 	buildType="Debug"
 fi
 mkdir -p build
-cd build
-cmake -DCMAKE_BUILD_TYPE="${buildType^}" .. -G "Unix Makefiles"
-make
-cd ..
+if uname -a | grep -q "WSL2"; then
+	cmake -S . -B ./build -G "Unix Makefiles" -DCONFIG_USE_WAYLAND=OFF -DCMAKE_BUILD_TYPE="${buildType^}"
+else
+	cmake -S . -B ./build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="${buildType^}"
+fi
+cmake --build ./build
+# make
+# cd ..
 if [[ "${buildType^}" = "Debug" ]]; then
 	cd bin
 	wezterm start --cwd . --always-new-process --class floating gdb -ex run ./$(basename $(dirname $PWD))

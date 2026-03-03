@@ -22,7 +22,7 @@ Program::Program()
 {
 	// TODO: Pull this out to init function
 #ifndef __EMSCRIPTEN__
-	if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND) != 0)
+	if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND) != 0 && USE_WAYLAND)
 	{
 		glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_WAYLAND);
 		std::println("Wayland");
@@ -31,12 +31,12 @@ Program::Program()
 	{
 		glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
 		std::println("X11");
-		raise(SIGTRAP);
+		// raise(SIGTRAP);
 	}
 #endif // !__EMSCRIPTEN__
 	glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_FALSE);
 	glfwInit();
-	bgfx::init();
+	// bgfx::init();
 	this->win = EngineWindow(NAME, 800, 800);
 }
 Program::~Program()
@@ -84,7 +84,7 @@ void Program::Init()
 	init.platformData.nwh = this->win.GetNativeHandle();
 #ifdef __linux__
 	// raise(SIGTRAP);
-	if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND) != 0)
+	if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND) != 0 && USE_WAYLAND)
 	{
 		init.platformData.ndt = glfwGetWaylandDisplay();
 		init.platformData.type = bgfx::NativeWindowHandleType::Wayland;
