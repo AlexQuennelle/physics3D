@@ -2,6 +2,7 @@
 #include "backends/imgui_impl_glfw.h"
 #include "matrix.h"
 #include "mesh.h"
+#include "shader.h"
 
 #include <imgui/imgui_impl_bgfx.h>
 
@@ -116,9 +117,13 @@ void Program::Init()
 	// TODO: Add proper selection for backends
 
 	Vertex::Init();
+	this->shader = CreateShaderProgram(SHADERS "cubes.vert.bin",
+									   SHADERS "cubes.frag.bin");
 	this->modelMat = Matrix<4>::Identity();
 
-	test = Mesh(RESOURCES_PATH "Suzanne.obj");
+	testModel = LoadModel(RESOURCES_PATH "Suzanne.obj");
+	std::println("Loaded {} meshes", testModel.size());
+	// test = Mesh(RESOURCES_PATH "arrow.obj");
 }
 void Program::Update()
 {
@@ -184,7 +189,11 @@ void Program::Draw()
 	bgfx::setState(testState);
 	// TODO: Add GameObject/Actor class to encapsulate this stuff
 	bgfx::setTransform(modelMat.Data());
-	this->test.Draw();
+	for (auto& [mesh, transform] : this->testModel)
+	{
+		mesh.Draw(this->shader);
+	}
+	// this->test.Draw();
 	// for (uint32_t yy = 0; yy < 11; ++yy)
 	// {
 	// 	for (uint32_t xx = 0; xx < 11; ++xx)

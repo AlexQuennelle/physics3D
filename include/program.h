@@ -5,6 +5,7 @@
 #include "matrix.h"
 
 #include <bx/timer.h>
+#include <vector>
 
 static const std::string_view Backend{BACKEND};
 
@@ -31,7 +32,8 @@ class Program
 	void Draw(); // const;
 
 	EngineWindow win;
-	Mesh test;
+	// Mesh test;
+	std::vector<std::pair<Mesh,Matrix<4>>> testModel;
 
 	bgfx::ProgramHandle shader = BGFX_INVALID_HANDLE;
 

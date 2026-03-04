@@ -1,18 +1,18 @@
 cmake_minimum_required(VERSION 3.30.5)
 
 set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+# set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 
-if("${CMAKE_GENERATOR}" STREQUAL "Ninja")
-    set(WINDOWS TRUE)
-    message("Ninja")
-else()
+# if("${CMAKE_GENERATOR}" STREQUAL "Ninja")
+#     set(WINDOWS TRUE)
+#     message("Ninja")
+# else()
 
-endif()
+# endif()
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O3;-ffast-math>")
 # add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O0;-g>")
 
