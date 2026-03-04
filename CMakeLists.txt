@@ -1,41 +1,35 @@
 cmake_minimum_required(VERSION 3.30.5)
 
 set(CMAKE_CXX_STANDARD 23)
-# set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+message("Build type: ${CMAKE_BUILD_TYPE}")
 
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
-
-# if("${CMAKE_GENERATOR}" STREQUAL "Ninja")
-#     set(WINDOWS TRUE)
-#     message("Ninja")
-# else()
-
-# endif()
-# add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O3;-ffast-math>")
-# add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-O0;-g>")
-
-if(NOT WINDOWS)
-    add_compile_options("-fsanitize=undefined")
-    # add_compile_options("-fsanitize=address")
+if(NOT EMSCRIPTEN)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+else()
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
 endif()
 
-# Change this to match the name of the current folder
+if(LINUX AND CONFIG_USE_UBSAN)
+    add_compile_options("-fsanitize=undefined")
+elseif(LINUX AND CONFIG_USE_ASAN)
+    add_compile_options("-fsanitize=address")
+endif()
+
 project(
     physics3D
     LANGUAGES CXX C
     VERSION 0.1
 )
-# option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
-
-message("Build type: ${CMAKE_BUILD_TYPE}")
-
 add_executable("${CMAKE_PROJECT_NAME}")
 
-if(NOT WINDOWS)
+if(LINUX AND CONFIG_USE_UBSAN)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined")
-    # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+elseif(LINUX AND CONFIG_USE_ASAN)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 endif()
 
 set(SHADERS_SOURCE ${CMAKE_SOURCE_DIR}/resources/shaders)
@@ -44,7 +38,7 @@ set(SHADERS_BIN ${CMAKE_BINARY_DIR}/shaders)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine-core/)
 
 # include(${CMAKE_BINARY_DIR}/_deps/bgfx-src/cmake/bgfxToolUtils.cmake)
-# build/_deps/bgfx-build/cmake/bgfx/shaderc -f resources/shaders/cubes.vert -o build/shaders/spirv/cubes.vert.bin --type v --varyingdef resources/shaders/varying.def.sc -p spirv
+# build/_deps/bgfx-build/cmake/bgfx/shaderc -f resources/shaders/cubes.vert -o build/shaders/spirv/cubes.vert.bin --type v --varyingdef resources/shaders/varying.def.sc -p spirv && build/_deps/bgfx-build/cmake/bgfx/shaderc -f resources/shaders/cubes.frag -o build/shaders/spirv/cubes.frag.bin --type g --varyingdef resources/shaders/varying.def.sc -p spirv
 
 if(NOT EMSCRIPTEN)
     message("Compiling Shaders")
