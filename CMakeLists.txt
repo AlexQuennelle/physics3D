@@ -7,11 +7,15 @@ set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 message("Build type: ${CMAKE_BUILD_TYPE}")
 
+# add_compile_definitions(__FILE__=__FILE_NAME__)
+add_compile_definitions(BX_FILE=__FILE_NAME__)
+
 if(NOT EMSCRIPTEN)
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
 else()
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
 endif()
+set(BUILD_SHARED_LIBS ON)
 
 if(LINUX AND CONFIG_USE_UBSAN)
     add_compile_options("-fsanitize=undefined")
@@ -38,7 +42,7 @@ set(SHADERS_BIN ${CMAKE_BINARY_DIR}/shaders)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/engine-core/)
 
 # include(${CMAKE_BINARY_DIR}/_deps/bgfx-src/cmake/bgfxToolUtils.cmake)
-# build/_deps/bgfx-build/cmake/bgfx/shaderc -f resources/shaders/cubes.vert -o build/shaders/spirv/cubes.vert.bin --type v --varyingdef resources/shaders/varying.def.sc -p spirv && build/_deps/bgfx-build/cmake/bgfx/shaderc -f resources/shaders/cubes.frag -o build/shaders/spirv/cubes.frag.bin --type g --varyingdef resources/shaders/varying.def.sc -p spirv
+# build/_deps/bgfx-build/cmake/bgfx/shaderc -f resources/shaders/cubes.vert -o build/shaders/spirv/cubes.vert.bin --type v --varyingdef resources/shaders/varying.def.sc -p spirv && build/_deps/bgfx-build/cmake/bgfx/shaderc -f resources/shaders/cubes.frag -o build/shaders/spirv/cubes.frag.bin --type f --varyingdef resources/shaders/varying.def.sc -p spirv
 
 if(NOT EMSCRIPTEN)
     message("Compiling Shaders")

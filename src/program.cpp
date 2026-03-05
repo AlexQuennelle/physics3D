@@ -9,7 +9,6 @@
 #include <GLFW/glfw3.h>
 #include <bgfx/bgfx.h>
 #include <bx/math.h>
-#include <csignal>
 #include <cstdint>
 #include <imgui.h>
 #include <print>
@@ -69,6 +68,7 @@ void Program::Init()
 	this->win.BeginContext();
 
 	bgfx::Init init;
+	init.debug = false;
 	init.vendorId = BGFX_PCI_ID_NONE;
 #ifdef __EMSCRIPTEN__
 	init.type = bgfx::RendererType::OpenGL;
@@ -105,6 +105,7 @@ void Program::Init()
 	init.resolution.reset = BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X4;
 
 	bgfx::init(init);
+	bgfx::setDebug(0);
 
 	lastFrame = bx::getNow();
 
@@ -119,11 +120,12 @@ void Program::Init()
 	Vertex::Init();
 	this->shader = CreateShaderProgram(SHADERS "cubes.vert.bin",
 									   SHADERS "cubes.frag.bin");
-	this->modelMat = Matrix<4>::Identity();
-
-	testModel = LoadModel(RESOURCES_PATH "Suzanne.obj");
-	std::println("Loaded {} meshes", testModel.size());
-	// test = Mesh(RESOURCES_PATH "arrow.obj");
+	// this->modelMat = Matrix<4>::Identity();
+	// this->modelMat = Matrix<4>::LookAt({.x = 0.0f, .y = 0.0f, .z = 0.0f},
+	// 								   -Vector3::Forward(), Normal3::Up());
+	this->modelMat = Matrix<4>::FromQuaternion(Quaternion::FromEulerAngle(
+		90.0f * (std::numbers::pi_v<float> / 180.0f), 0.0f, 0.0f));
+	testModel = LoadModel(RESOURCES_PATH "arrow.obj");
 }
 void Program::Update()
 {
@@ -135,9 +137,8 @@ void Program::Update()
 		static_cast<double>(bx::getNow().ticks - this->lastFrame.ticks)
 		/ static_cast<double>(this->lastFrame.s_kFreq.ticks));
 	this->lastFrame = bx::getNow();
-	if (spin)
-		this->modelMat = modelMat.RotateY(15.0f * this->deltaTime);
-	// this->modelMat *= Matrix<4>::FromAngleY(5.0f * this->deltaTime);
+	// if (spin)
+	// 	this->modelMat = modelMat.RotateY(15.0f * this->deltaTime);
 }
 void Program::Draw()
 {
@@ -148,7 +149,7 @@ void Program::Draw()
 	ImGui_ImplGlfw_NewFrame();
 	ImGui_ImplBGFX_NewFrame();
 	const Vector3 at = {.x = 0.0f, .y = 0.0f, .z = 0.0f};
-	const Vector3 eye = {.x = 0.0f, .y = 2.0f, .z = -4.0f};
+	const Vector3 eye = {.x = 0.0f, .y = 2.0f, .z = -2.0f};
 
 	ImGui::SetNextWindowPos({5.0f, 5.0f});
 	bool showDemo{true};
