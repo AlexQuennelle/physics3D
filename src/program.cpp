@@ -72,7 +72,7 @@ void Program::Init()
 	// init.debug = false;
 	init.vendorId = BGFX_PCI_ID_NONE;
 #ifdef __EMSCRIPTEN__
-	init.type = bgfx::RendererType::OpenGL;
+	init.type = bgfx::RendererType::OpenGLES;
 #else
 	std::println("{}", Backend);
 	if (Backend == "VULKAN")
