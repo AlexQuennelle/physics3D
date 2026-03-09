@@ -5,10 +5,20 @@ else
 fi
 mkdir -p bin
 if [[ "${buildType^}" = "Web" ]]; then
+	if [[ "$2" ]]; then
+		buildType="$2"
+	else
+		buildType="Release"
+		# read -p "Debug level: " buildType
+	fi
+
+	if [ "${buildType^}" != "Debug" ] && [ "${buildType^}" != "Release" ]; then
+		buildType="Debug"
+	fi
 	mkdir -p build.web
-	cd build.web
-	emcmake.py cmake -DCMAKE_BUILD_TYPE=Release -DPLATFORM=Web ..
-	emmake.py make
+	# cd build.web
+	emcmake.py cmake -S . -B ./build.web -G "Ninja" -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE="${buildType^}" -DPLATFORM=Web
+	emmake.py cmake --build ./build.web
 	cd ..
 	exit
 elif [ "${buildType^}" != "Debug" ] && [ "${buildType^}" != "Release" ]; then

@@ -1,9 +1,10 @@
 #include "program.h"
-#include "backends/imgui_impl_glfw.h"
-#include "matrix.h"
-#include "mesh.h"
-#include "shader.h"
 
+#include <matrix.h>
+#include <mesh.h>
+#include <shader.h>
+
+#include <backends/imgui_impl_glfw.h>
 #include <imgui/imgui_impl_bgfx.h>
 
 #include <GLFW/glfw3.h>
@@ -68,7 +69,7 @@ void Program::Init()
 	this->win.BeginContext();
 
 	bgfx::Init init;
-	init.debug = false;
+	// init.debug = false;
 	init.vendorId = BGFX_PCI_ID_NONE;
 #ifdef __EMSCRIPTEN__
 	init.type = bgfx::RendererType::OpenGL;
@@ -83,7 +84,10 @@ void Program::Init()
 #endif // __EMSCRIPTEN__
 
 	init.platformData.nwh = this->win.GetNativeHandle();
-#ifdef __linux__
+#ifdef __EMSCRIPTEN__
+	init.platformData.ndt = nullptr;
+	init.platformData.type = bgfx::NativeWindowHandleType::Default;
+#elifdef __linux__
 	// raise(SIGTRAP);
 	if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND) != 0 && USE_WAYLAND)
 	{
@@ -105,7 +109,7 @@ void Program::Init()
 	init.resolution.reset = BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X4;
 
 	bgfx::init(init);
-	bgfx::setDebug(0);
+	// bgfx::setDebug(0);
 
 	lastFrame = bx::getNow();
 
@@ -114,8 +118,19 @@ void Program::Init()
 
 	// ImGui::CreateContext();
 	ImGui_ImplBGFX_Init();
-	ImGui_ImplGlfw_InitForVulkan(this->win.GetGLFWHandle(), true);
 	// TODO: Add proper selection for backends
+	switch (init.type)
+	{
+		using enum bgfx::RendererType::Enum;
+	case Vulkan:
+		ImGui_ImplGlfw_InitForVulkan(this->win.GetGLFWHandle(), true);
+		break;
+	case OpenGL:
+		ImGui_ImplGlfw_InitForOpenGL(this->win.GetGLFWHandle(), true);
+		break;
+	default:
+		break;
+	}
 
 	Vertex::Init();
 	this->shader = CreateShaderProgram(SHADERS "cubes.vert.bin",

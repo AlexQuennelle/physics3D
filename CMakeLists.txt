@@ -12,10 +12,11 @@ add_compile_definitions(BX_FILE=__FILE_NAME__)
 
 if(NOT EMSCRIPTEN)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
+    set(BUILD_SHARED_LIBS ON)
 else()
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
 endif()
-set(BUILD_SHARED_LIBS ON)
+set(BUILD_SHARED_LIBS OFF)
 
 if(LINUX AND CONFIG_USE_UBSAN)
     add_compile_options("-fsanitize=undefined")
@@ -81,20 +82,26 @@ if(EMSCRIPTEN)
     file(GLOB_RECURSE DATAFILES CONFIGURE_DEPENDS
          "${CMAKE_CURRENT_SOURCE_DIR}/resources/*"
     )
-    foreach(FILE ${DATAFILES})
-        get_filename_component(TRIMMED ${FILE} NAME)
-        set_target_properties(
-            ${CMAKE_PROJECT_NAME}
-            PROPERTIES
-                LINK_FLAGS
-                "--preload-file ../resources/${TRIMMED}@./resources/${TRIMMED}"
-        )
-    endforeach()
+    # foreach(FILE ${DATAFILES})
+    #     get_filename_component(TRIMMED ${FILE} NAME)
+    #     set_target_properties(
+    #         ${CMAKE_PROJECT_NAME}
+    #         PROPERTIES
+    #             LINK_FLAGS
+    #             "--preload-file ../resources/${TRIMMED}@./resources/${TRIMMED}"
+    #     )
+    # endforeach()
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
     set_target_properties(
-        ${CMAKE_PROJECT_NAME}
-        PROPERTIES LINK_FLAGS "--preload-file ../resources@./resources"
-    )
+    ${CMAKE_PROJECT_NAME}
+    PROPERTIES LINK_FLAGS
+    "--preload-file ${CMAKE_SOURCE_DIR}/build/shaders/${SHADER_TYPE}@./resources/shaders/${SHADER_TYPE} --preload-file ../resources@./resources\
+ --exclude-file ../resources/shaders/ -sALLOW_MEMORY_GROWTH"
+      )
+    # set_target_properties(
+    #     ${CMAKE_PROJECT_NAME}
+    #     PROPERTIES LINK_FLAGS "--preload-file ../resources@./resources"
+    # )
 endif()
 target_compile_definitions(
     ${CMAKE_PROJECT_NAME} PUBLIC $<$<CONFIG:Release>:PRODUCTION_BUILD>
