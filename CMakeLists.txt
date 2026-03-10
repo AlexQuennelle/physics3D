@@ -95,8 +95,11 @@ if(EMSCRIPTEN)
     set_target_properties(
     ${CMAKE_PROJECT_NAME}
     PROPERTIES LINK_FLAGS
-    "--preload-file ${CMAKE_SOURCE_DIR}/build/shaders/${SHADER_TYPE}@./resources/shaders/${SHADER_TYPE} --preload-file ../resources@./resources\
- --exclude-file ../resources/shaders/ -sALLOW_MEMORY_GROWTH"
+    "--preload-file\
+ ${CMAKE_SOURCE_DIR}/build/shaders/${SHADER_TYPE}@./resources/shaders/${SHADER_TYPE}\
+ --preload-file ../resources@./resources\
+ --exclude-file ../resources/shaders/ -sALLOW_MEMORY_GROWTH -sUSE_WEBGL2=1\
+ -sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2"
       )
     # set_target_properties(
     #     ${CMAKE_PROJECT_NAME}

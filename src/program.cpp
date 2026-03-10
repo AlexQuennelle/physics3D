@@ -104,6 +104,7 @@ void Program::Init()
 #endif // __linux__
 	init.platformData.context = nullptr;
 
+	init.resolution.formatColor = bgfx::TextureFormat::RGBA8;
 	init.resolution.width = static_cast<uint32_t>(this->win.GetHeight());
 	init.resolution.height = static_cast<uint32_t>(this->win.GetWidth());
 	init.resolution.reset = BGFX_RESET_VSYNC | BGFX_RESET_MSAA_X4;
