@@ -6,22 +6,16 @@ fi
 mkdir -p bin
 if [[ "${buildType^}" = "Web" ]]; then
 	mkdir -p build.web
-	cd build.web
-	emcmake.py cmake -DCMAKE_BUILD_TYPE=Release -DPLATFORM=Web ..
-	emmake.py make
-	cd ..
+	emcmake.py cmake -S . -B ./build.web -DCMAKE_BUILD_TYPE=Release -DPLATFORM=Web
+	cmake --build ./build.web
+	# cd build.web
+	# emmake.py make
+	# cd ..
 	exit
 elif [ "${buildType^}" != "Debug" ] && [ "${buildType^}" != "Release" ]; then
 	buildType="Debug"
 fi
 mkdir -p build
-cd build
-cmake -DCMAKE_BUILD_TYPE="${buildType^}" .. -G "Unix Makefiles"
-make
-cd ..
-if [[ "${buildType^}" = "Debug" ]]; then
-	cd bin
-	wezterm start --cwd . --always-new-process --class floating gdb -ex run ./$(basename $(dirname $PWD))
-	# wezterm start --cwd . --always-new-process --class floating ./$(basename $(dirname $PWD))
-fi
+cmake -S . -B ./build -G "Ninja" -DCMAKE_BUILD_TYPE="${buildType^}"
+cmake --build ./build
 exit

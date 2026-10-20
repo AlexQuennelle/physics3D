@@ -114,8 +114,8 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 		this->faces.back().edgeArr = &this->edges;
 		for (uint64_t i{0}; i < face.indices.size(); i++)
 		{
-			VertPair pair{face.indices[i],
-						  face.indices[(i + 1) % face.indices.size()]};
+			VertPair pair{face.indices.at(i),
+						  face.indices.at((i + 1) % face.indices.size())};
 			tmpEdges.insert({pair, HE::HEdge()});
 
 			tmpEdges[pair].vertArr = &this->vertices;
@@ -124,9 +124,9 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 
 			tmpEdges[pair].faceID
 				= static_cast<uint8_t>(this->faces.size() - 1);
-			tmpEdges[pair].vertID = face.indices[i];
+			tmpEdges[pair].vertID = face.indices.at(i);
 			tmpEdges[pair].nextID = pair.second;
-			anchors[this->faces.size() - 1] = pair;
+			anchors.at(this->faces.size() - 1) = pair;
 
 			if (!uniqueEdges.contains(pair)
 				&& !uniqueEdges.contains({pair.second, pair.first}))
@@ -137,17 +137,17 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 	}
 	for (uint64_t i{0}; i < this->faces.size(); i++)
 	{
-		auto face = faces[i];
-		this->faces[i].edgeID = static_cast<uint8_t>(
-			std::distance(tmpEdges.begin(), tmpEdges.find(anchors[i])));
+		auto face = faces.at(i);
+		this->faces.at(i).edgeID = static_cast<uint8_t>(
+			std::distance(tmpEdges.begin(), tmpEdges.find(anchors.at(i))));
 		for (uint64_t j{0}; j < face.indices.size(); j++)
 		{
-			VertPair pair{face.indices[j],
-						  face.indices[(j + 1) % face.indices.size()]};
-			VertPair pairO{face.indices[(j + 1) % face.indices.size()],
-						   face.indices[j]};
-			VertPair next{face.indices[(j + 1) % face.indices.size()],
-						  face.indices[(j + 2) % face.indices.size()]};
+			VertPair pair{face.indices.at(j),
+						  face.indices.at((j + 1) % face.indices.size())};
+			VertPair pairO{face.indices.at((j + 1) % face.indices.size()),
+						   face.indices.at(j)};
+			VertPair next{face.indices.at((j + 1) % face.indices.size()),
+						  face.indices.at((j + 2) % face.indices.size())};
 			tmpEdges[pair].nextID = static_cast<uint8_t>(
 				std::distance(tmpEdges.begin(), tmpEdges.find(next)));
 			if (tmpEdges.contains(pairO))
@@ -162,8 +162,8 @@ HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 
 	auto getEdgeDir = [this](auto pair) -> Vector3
 	{
-		return this->vertices[pair.first].Vec()
-			   - this->vertices[pair.second].Vec();
+		return this->vertices.at(pair.first).Vec()
+			   - this->vertices.at(pair.second).Vec();
 	};
 	this->edgeDirs = uniqueEdges
 					 | rv::transform(getEdgeDir)
@@ -212,13 +212,13 @@ void HullCollider::GetTransformed(const Matrix trans,
 	HullCollider newCol{HullCollider(*this)};
 	for (uint64_t i{0}; i < newCol.vertices.size(); i++)
 	{
-		newCol.vertices[i] = newCol.vertices[i] * trans;
+		newCol.vertices.at(i) = newCol.vertices.at(i) * trans;
 	}
 	for (uint64_t i{0}; i < newCol.faces.size(); i++)
 	{
-		auto newNor = newCol.faces[i].normal * trans;
-		newCol.faces[i].normal = Vector3Normalize(
-			Vector3Subtract(newNor, {trans.m12, trans.m13, trans.m14}));
+		auto newNor = newCol.faces.at(i).normal * trans;
+		newCol.faces.at(i).normal = Vector3Normalize(Vector3Subtract(
+			newNor, {.x = trans.m12, .y = trans.m13, .z = trans.m14}));
 	}
 	for (auto& dir : newCol.edgeDirs)
 	{
@@ -315,8 +315,8 @@ void HullCollider::DebugDraw(const Matrix& transform, const Color& col) const
 }
 void HullCollider::DebugDrawEdge(const uint64_t index) const
 {
-	DrawSphere(this->edges[index].Vertex()->Vec(), 0.05f, GREEN);
-	DrawSphere(this->edges[index].Next()->Vertex()->Vec(), 0.05f, GREEN);
+	DrawSphere(this->edges.at(index).Vertex()->Vec(), 0.05f, GREEN);
+	DrawSphere(this->edges.at(index).Next()->Vertex()->Vec(), 0.05f, GREEN);
 }
 
 auto CreateBoxCollider(Matrix transform) -> Collider
@@ -358,16 +358,17 @@ auto CreateBoxCollider(Matrix transform) -> Collider
 	for (auto nor : nors)
 	{
 		auto newNor = nor * transform;
-		newNor = Vector3Subtract(newNor,
-								 {transform.m12, transform.m13, transform.m14});
+		newNor = Vector3Subtract(
+			newNor,
+			{.x = transform.m12, .y = transform.m13, .z = transform.m14});
 		faces.emplace_back(Vector3Normalize(newNor));
 	}
-	faces[0].indices = {1, 5, 7, 3};
-	faces[1].indices = {0, 2, 6, 4};
-	faces[2].indices = {3, 7, 6, 2};
-	faces[3].indices = {4, 5, 1, 0};
-	faces[4].indices = {4, 6, 7, 5};
-	faces[5].indices = {0, 1, 3, 2};
+	faces.at(0).indices = {1, 5, 7, 3};
+	faces.at(1).indices = {0, 2, 6, 4};
+	faces.at(2).indices = {3, 7, 6, 2};
+	faces.at(3).indices = {4, 5, 1, 0};
+	faces.at(4).indices = {4, 6, 7, 5};
+	faces.at(5).indices = {0, 1, 3, 2};
 	// return std::make_shared<HullCollider>(newVerts, faces,
 	// 									  Vector3Zero() * transform);
 	HullCollider newCol{newVerts, faces, Vector3Zero() * transform};
@@ -398,7 +399,7 @@ void CompoundCollider::GetNormals(vector<Vector3>& out) const
 }
 auto CompoundCollider::GetSupportPoint(const Vector3 /*axis*/) -> Vector3
 {
-	return {0.0f, 0.0f, 0.0f};
+	return {.x = 0.0f, .y = 0.0f, .z = 0.0f};
 }
 void CompoundCollider::DebugDraw(const Matrix& transform,
 								 const Color& colour) const
