@@ -16,11 +16,11 @@ std::unique_ptr<phys::Program> program{nullptr}; // NOLINT
 auto main() -> int
 {
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
-#if defined(PLATFORM_WEB)
+#ifdef PLATFORM_WEB
 	InitWindow(500, 500, NAME);
 	rlSetLineWidth(2.0f);
 	rlImGuiSetup(true);
-	world = std::make_unique<phys::World>();
+	program = std::make_unique<phys::Program>();
 	requestSize(500, 500);
 	emscripten_set_main_loop(Update, 0, 1);
 #else
@@ -31,7 +31,7 @@ auto main() -> int
 	program = std::make_unique<phys::Program>();
 #endif
 
-#if !defined(PLATFORM_WEB)
+#ifndef PLATFORM_WEB
 	while (!WindowShouldClose())
 	{
 		Update();

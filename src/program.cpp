@@ -9,6 +9,7 @@
 #include <cstring>
 #include <imgui.h>
 #include <iostream>
+#include <memory>
 #include <numbers>
 #include <optional>
 #include <raylib.h>
@@ -24,27 +25,29 @@ Program::Program() : deltaTime(NAN), cam({}), imguiIO(&ImGui::GetIO())
 	std::cout << "Initializing Program\n";
 	ClearStyles();
 	using namespace std::numbers;
-	this->cam = Camera(
-		{.position = Vector3RotateByAxisAngle(
-			 Vector3RotateByAxisAngle({10.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f},
-									  pi_v<float> / 12.0f),
-			 {0.0f, 1.0f, 0.0f}, pi_v<float> * -3.0f / 4.0f),
-		 .target = {0.0f, 0.0f, 0.0f},
-		 .up = {0.0f, 1.0f, 0.0f},
-		 .fovy = 45.0f,
-		 .projection = 0});
+	this->cam = Camera({
+		.position = Vector3RotateByAxisAngle(
+			Vector3RotateByAxisAngle({.x = 10.0f, .y = 0.0f, .z = 0.0f},
+									 {.x = 0.0f, .y = 0.0f, .z = 1.0f},
+									 pi_v<float> / 12.0f),
+			{.x = 0.0f, .y = 1.0f, .z = 0.0f}, pi_v<float> * -3.0f / 4.0f),
+		.target = {.x = 0.0f, .y = 0.0f, .z = 0.0f},
+		.up = {.x = 0.0f, .y = 1.0f, .z = 0.0f},
+		.fovy = 45.0f,
+		.projection = 0,
+	});
 
-	this->objects.push_back(
-		CreateBoxObject({2.0f, 0.2f, -0.5f}, {1.0f, 1.0f, 1.0f}));
-	//CreateBoxObject({2.0f, 0.0f, 0.5f}, {1.0f, 1.0f, 1.0f}));
-	//this->objects[0].Rotate(QuaternionFromEuler(0.0f, 45.0f * DEG2RAD, 0.0f));
-	//this->objects.push_back(
-	//	CreateBoxObject({2.0f, 0.0f, 0.5f}, {1.0f, 1.0f, 1.0f}));
-	this->DebugAddStairObj({2.0f, 0.0f, 0.5f});
-	//this->objects[1].Rotate(
-	//	QuaternionFromAxisAngle({0.0f, 1.0f, 0.0f}, 45.0f * DEG2RAD));
-	//this->objects[1].Rotate(
-	//	QuaternionFromAxisAngle({1.0f, 0.0f, 0.0f}, -35.0f * DEG2RAD));
+#ifdef PLATFORM_WEB
+	this->objects.push_back(CreateBoxObject({.x = 0.0f, .y = 0.0f, .z = 0.0f},
+											{.x = 1.0f, .y = 1.0f, .z = 1.0f}));
+	this->DebugAddStairObj({.x = 0.0f, .y = 0.0f, .z = 1.0f});
+	this->objects.at(1).Rotate(QuaternionFromAxisAngle(
+		{.x = 1.0f, .y = 0.0f, .z = 0.0f}, -45.0f * DEG2RAD));
+#else
+	this->objects.push_back(CreateBoxObject({.x = 2.0f, .y = 0.2f, .z = -0.5f},
+											{.x = 1.0f, .y = 1.0f, .z = 1.0f}));
+	this->DebugAddStairObj({.x = 2.0f, .y = 0.0f, .z = 0.5f});
+#endif // PLATFORM_WEB
 	SetTextColor(INFO);
 	std::cout << "Done Initializing\n";
 	ClearStyles();
@@ -58,10 +61,8 @@ void Program::Update()
 	BeginDrawing();
 	rlImGuiBegin();
 
-	ClearBackground({100, 149, 237, 255});
+	ClearBackground({.r = 100, .g = 149, .b = 237, .a = 255});
 	BeginMode3D(cam);
-	//objects[1].Rotate(
-	//	QuaternionFromAxisAngle({1.0f, 0.0f, 0.0f}, 1.0f * deltaTime));
 	for (auto& obj : this->objects)
 	{
 		obj.Update();
@@ -87,9 +88,6 @@ void Program::Update()
 	this->ProcessInput();
 
 	// Drawing logic
-	//BeginDrawing();
-	//ClearBackground({100, 149, 237, 255});
-	//BeginMode3D(cam);
 	DrawGrid(2.5f, 2);
 	for (const auto& obj : this->objects)
 	{
@@ -98,7 +96,6 @@ void Program::Update()
 	EndMode3D();
 
 	bool open = true;
-	//open = selectedObj != nullptr;
 	ImGuiWindowFlags flags
 		= ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize;
 	if (selectedObj != nullptr)
@@ -139,12 +136,13 @@ void Program::ProcessInput()
 				DisableCursor();
 			}
 
-			cam.position
-				= Vector3RotateByAxisAngle(cam.position, {0.0f, 1.0f, 0.0f},
-										   -mouseDelta.x * 0.8f * deltaTime);
+			cam.position = Vector3RotateByAxisAngle(
+				cam.position, {.x = 0.0f, .y = 1.0f, .z = 0.0f},
+				-mouseDelta.x * 0.8f * deltaTime);
 			float dAngle = -mouseDelta.y * 0.4f * deltaTime;
-			float currentAngle = Vector3Angle(Vector3Normalize(cam.position),
-											  {0.0f, 1.0f, 0.0f});
+			float currentAngle
+				= Vector3Angle(Vector3Normalize(cam.position),
+							   {.x = 0.0f, .y = 1.0f, .z = 0.0f});
 			if (currentAngle + dAngle > 175.0f * DEG2RAD)
 			{
 				dAngle -= (currentAngle + dAngle) - (175.0f * DEG2RAD);
@@ -156,8 +154,9 @@ void Program::ProcessInput()
 			cam.position = Vector3RotateByAxisAngle(
 				cam.position,
 				Vector3CrossProduct(
-					Vector3Subtract({0.0f, 0.0f, 0.0f}, cam.position),
-					{0.0f, 1.0f, 0.0f}),
+					Vector3Subtract({.x = 0.0f, .y = 0.0f, .z = 0.0f},
+									cam.position),
+					{.x = 0.0f, .y = 1.0f, .z = 0.0f}),
 				dAngle);
 		}
 		else if (IsCursorHidden())
@@ -211,9 +210,22 @@ void Program::DebugAddStairObj(Vector3 pos)
 
 	Mesh modelMesh = *model.meshes;
 	Mesh mesh{
-		0,		 0,		  nullptr, nullptr, nullptr, nullptr,
-		nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-		nullptr, nullptr, 0,	   0,		nullptr,
+		.vertexCount = 0,
+		.triangleCount = 0,
+		.vertices = nullptr,
+		.texcoords = nullptr,
+		.texcoords2 = nullptr,
+		.normals = nullptr,
+		.tangents = nullptr,
+		.colors = nullptr,
+		.indices = nullptr,
+		.boneCount = 0,
+		// .boneIndices = nullptr,
+		.boneWeights = nullptr,
+		.animVertices = nullptr,
+		.animNormals = nullptr,
+		.vaoId = 0,
+		.vboId = nullptr,
 	};
 	mesh.vertexCount = modelMesh.vertexCount;
 	mesh.vertices = static_cast<float*>(std::malloc(
@@ -238,11 +250,10 @@ void Program::DebugAddStairObj(Vector3 pos)
 		CreateBoxCollider(MatrixScale(1.0f, 0.5f, 0.5f)
 						  * MatrixTranslate(0.0f, -0.25f, -0.25f)),
 	});
-#if defined(PLATFORM_WEB)
-	this->objects.emplace_back(PhysObject(
-		{0.0f, 0.0f, 0.5f}, mesh, std::dynamic_pointer_cast<Collider>(col),
-		RESOURCES_PATH "shaders/litShader_web.vert",
-		RESOURCES_PATH "shaders/litShader_web.frag"));
+#ifdef PLATFORM_WEB
+	this->objects.emplace_back(pos, mesh, col,
+							   RESOURCES_PATH "shaders/litShader_web.vert",
+							   RESOURCES_PATH "shaders/litShader_web.frag");
 #else
 	this->objects.emplace_back(pos, mesh, col,
 							   RESOURCES_PATH "shaders/litShader.vert",

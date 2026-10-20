@@ -147,10 +147,12 @@ void CheckFaceCollision(const Collider& colA, const Collider& colB,
 			}
 		}
 		GenFaceContact(ref, hull2.GetFace(incidentID));
+#ifndef NDEBUG
 		DrawLine3D(faces1.support,
 				   faces1.support
 					   + (hull1.GetFace(faces1.id).normal * faces1.penetration),
 				   RED);
+#endif // !NDEBUG
 	}
 	else
 	{
@@ -168,10 +170,12 @@ void CheckFaceCollision(const Collider& colA, const Collider& colB,
 			}
 		}
 		GenFaceContact(ref, hull1.GetFace(incidentID));
+#ifndef NDEBUG
 		DrawLine3D(faces2.support,
 				   faces2.support
 					   + (hull2.GetFace(faces2.id).normal * faces2.penetration),
 				   RED);
+#endif // !NDEBUG
 	}
 	// return true;
 }
@@ -496,7 +500,9 @@ auto CheckEdgeNors(Collider colA, Collider colB) -> EdgeHit
 
 PhysObject::PhysObject(const Vector3 pos, const Mesh mesh,
 					   const Collider& col) :
-	mesh(mesh), collider(col), material(LoadMaterialDefault()),
+	mesh(mesh),
+	collider(col),
+	material(LoadMaterialDefault()),
 	position(MatrixTranslate(pos.x, pos.y, pos.z)),
 	rotation(MatrixRotate({0.0f, 1.0f, 0.0f}, 0.0f)),
 	scale(MatrixScale(1.0f, 1.0f, 1.0f))
@@ -505,7 +511,8 @@ PhysObject::PhysObject(const Vector3 pos, const Mesh mesh,
 	UploadMesh(&this->mesh, false);
 }
 PhysObject::PhysObject(const Vector3 pos, const Mesh mesh, const Collider& col,
-					   const Shader& shader) : phys::PhysObject(pos, mesh, col)
+					   const Shader& shader) :
+	phys::PhysObject(pos, mesh, col)
 {
 	this->SetShader(shader);
 }

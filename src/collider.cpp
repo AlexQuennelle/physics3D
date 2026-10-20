@@ -48,10 +48,25 @@ auto GetEdgeCrosses(const HullCollider& col1, const HullCollider& col2)
 	{
 		return !Vector3Equivalent(std::get<0>(pair), std::get<1>(pair));
 	};
+#ifdef PLATFORM_WEB
+	vector<Vector3Tuple> out;
+	for (const auto dir1 : col1.edgeDirs)
+	{
+		for (const auto dir2 : col2.edgeDirs)
+		{
+			if (!Vector3Equivalent(dir1, dir2))
+			{
+				out.push_back(crosses(std::pair<Vector3, Vector3>{dir1, dir2}));
+			}
+		}
+	};
+	return out;
+#else
 	return rv::cartesian_product(col1.edgeDirs, col2.edgeDirs)
 		   | rv::filter(deDupe)
 		   | rv::transform(crosses)
 		   | r::to<std::vector<Vector3Tuple>>();
+#endif
 }
 auto GetClosestPoints(const EdgeHit hit) -> std::pair<Vector3, Vector3>
 {
@@ -72,7 +87,8 @@ auto GetClosestPoints(const EdgeHit hit) -> std::pair<Vector3, Vector3>
 
 HullCollider::HullCollider(const vector<HE::HVertex>& verts,
 						   const vector<HE::FaceInit>& faces,
-						   const Vector3 origin) : origin(origin)
+						   const Vector3 origin) :
+	origin(origin)
 {
 #ifndef NDEBUG
 	// std::cout << "new hull\n";
